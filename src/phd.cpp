@@ -46,6 +46,10 @@
 # include <X11/Xlib.h>
 #endif // __linux__
 
+#ifdef __WXMSW__
+# include <wx/msw/wrapwin.h>
+#endif
+
 // #define DEVBUILD
 
 // Globals
@@ -481,6 +485,16 @@ struct EarlyLogger : public wxLog
 
 bool PhdApp::OnInit()
 {
+#ifdef __WXMSW__
+    // wxWidgets 3.0 enabled system DPI awareness for the process during app
+    // init; wx 3.1+ left that to the application manifest instead. PHD2's .rc
+    // suppresses wx's manifest (wxUSE_NO_MANIFEST 1), so without this call the
+    // process is DPI-unaware and Windows bitmap-stretches the whole window on
+    // displays scaled above 100% -- text renders at 96 DPI and gets resampled,
+    // which reads as "blurry, as if scaled". Must run before any window exists.
+    ::SetProcessDPIAware();
+#endif
+
 #ifdef __APPLE__
     // for newer versions of OSX the app will hang if the wx log code
     // tries to display a message box in OnOnit.  As a workaround send
