@@ -980,6 +980,11 @@ void Guider::SetState(GUIDER_STATE newState)
 
         if (newState == STATE_STOP)
         {
+            // the loop is stopping: keep the gap to the next frame from polluting
+            // the smoothed frame interval
+            m_lastFrameTimeUs = 0;
+            m_frameIntervalMs = 0.0;
+
             // we are going to stop looping exposures.  We should put
             // ourselves into a good state to restart looping later
             switch (m_state)
