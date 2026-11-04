@@ -166,6 +166,7 @@ Guider::Guider(wxWindow *parent, int xSize, int ySize)
     m_state = STATE_UNINITIALIZED;
     Debug.Write(wxString::Format("guider state => %s\n", StateStr(m_state)));
     m_scaleFactor = 1.0;
+    m_lastDisplayRefreshUs = 0;
     m_showBookmarks = true;
     m_displayedImage = new wxImage(XWinSize, YWinSize, true);
     m_paused = PAUSE_NONE;
@@ -770,6 +771,20 @@ void Guider::UpdateImageDisplay(usImage *pImage)
     // Refresh() only marks the window dirty; the paint happens in the event loop
     // and consecutive frames coalesce into one paint. Update() would force the
     // paint synchronously, right here, in the middle of the capture cadence.
+    //
+    // The paint itself is 40-80 ms of main-thread time at full-frame sizes (the
+    // client-area bitmap and the rescale dominate), so optionally cap how often
+    // the display is redrawn. 0 = every frame.
+    int maxFps = pConfig->Profile.GetInt("/Display/MaxFps", 0);
+    if (maxFps > 0)
+    {
+        long long now = wxGetUTCTimeUSec().GetValue();
+        long long gap = 1000000LL / maxFps;
+        if (m_lastDisplayRefreshUs != 0 && now - m_lastDisplayRefreshUs < gap)
+            return; // keep the newest image for the next allowed refresh
+        m_lastDisplayRefreshUs = now;
+    }
+
     Refresh();
 }
 

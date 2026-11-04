@@ -137,6 +137,7 @@ struct GuiderOffset
 class Guider : public wxWindow
 {
     wxImage *m_displayedImage;
+    long long m_lastDisplayRefreshUs;
     OVERLAY_MODE m_overlayMode;
     OverlaySlitCoords m_overlaySlitCoords;
     const DefectMap *m_defectMapPreview;
