@@ -69,6 +69,35 @@ public:
         return MaxADU;
     }
 
+    // Robust extremes for the display stretch. The old implementation ran a 3x3
+    // median over the whole frame and took the min/max of the result, whose only
+    // purpose was to reject isolated hot/dead pixels. Requiring a minimum number
+    // of pixels at the extreme is the same criterion applied in one dimension,
+    // and the histogram has already been built.
+    unsigned short filtMin(int minCount) const
+    {
+        int need = minCount;
+        for (int i = MinADU; i <= MaxADU; ++i)
+        {
+            need -= histo[i];
+            if (need <= 0)
+                return (unsigned short) i;
+        }
+        return MaxADU;
+    }
+
+    unsigned short filtMax(int minCount) const
+    {
+        int need = minCount;
+        for (int i = MaxADU; i >= MinADU; --i)
+        {
+            need -= histo[i];
+            if (need <= 0)
+                return (unsigned short) i;
+        }
+        return MinADU;
+    }
+
     void scan(const unsigned short *t, int len)
     {
         if (pixCount == 0)
@@ -105,6 +134,16 @@ public:
         pixCount += len;
     }
 };
+
+static void set_filt_extremes(const HistogramBuilder& hb, unsigned short& filtMin, unsigned short& filtMax)
+{
+    // A few pixels at the extreme is enough to reject an isolated hot or dead
+    // pixel while still tracking the true peak of a star.
+    int const minCount = hb.pixCount >= 4 ? 4 : 1;
+
+    filtMin = hb.filtMin(minCount);
+    filtMax = hb.filtMax(minCount);
+}
 
 bool usImage::Init(const wxSize& size)
 {
@@ -163,22 +202,7 @@ void usImage::CalcStats()
         MinADU = hb.MinADU;
         MaxADU = hb.MaxADU;
         MedianADU = hb.median();
-
-        unsigned short *tmpdata = new unsigned short[NPixels];
-
-        Median3(tmpdata, ImageData, Size, wxRect(Size));
-
-        const unsigned short *src = tmpdata;
-        for (unsigned int i = 0; i < NPixels; i++)
-        {
-            unsigned short d = *src++;
-            if (d < FiltMin)
-                FiltMin = d;
-            if (d > FiltMax)
-                FiltMax = d;
-        }
-
-        delete[] tmpdata;
+        set_filt_extremes(hb, FiltMin, FiltMax);
     }
     else
     {
@@ -205,22 +229,8 @@ void usImage::CalcStats()
         MinADU = hb.MinADU;
         MaxADU = hb.MaxADU;
         MedianADU = hb.median();
+        set_filt_extremes(hb, FiltMin, FiltMax);
 
-        dst = new unsigned short[pixcnt];
-
-        Median3(dst, tmpdata, Subframe.GetSize(), wxRect(Subframe.GetSize()));
-
-        const unsigned short *src = dst;
-        for (unsigned int i = 0; i < pixcnt; i++)
-        {
-            unsigned short d = *src++;
-            if (d < FiltMin)
-                FiltMin = d;
-            if (d > FiltMax)
-                FiltMax = d;
-        }
-
-        delete[] dst;
         delete[] tmpdata;
     }
 }

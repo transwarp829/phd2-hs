@@ -432,7 +432,17 @@ bool Camera_ZWO::Connect(const wxString& camId)
 
     Debug.Write(wxString::Format("ZWO: usb3 = %d, is_mini = %d, name = [%s]\n", is_usb3, is_mini, info.Name));
 
-    if (is_usb3 || is_mini)
+    // Snap mode carries a fixed ~65 ms per-frame cost on USB3 bodies that does
+    // not scale with frame size, so allow the profile to force free-running
+    // video mode for experimentation.
+    bool const forceVideo = pConfig->Profile.GetBoolean("/camera/ZWO/VideoMode", false);
+
+    if (forceVideo)
+    {
+        Debug.Write("ZWO: selecting video mode (profile override)\n");
+        m_mode = CM_VIDEO;
+    }
+    else if (is_usb3 || is_mini)
     {
         Debug.Write("ZWO: selecting snap mode\n");
         m_mode = CM_SNAP;
@@ -514,8 +524,17 @@ bool Camera_ZWO::Connect(const wxString& camId)
             case ASI_EXPOSURE:
                 break;
             case ASI_BANDWIDTHOVERLOAD:
-                ASISetControlValue(m_cameraId, ASI_BANDWIDTHOVERLOAD, caps.MinValue, ASI_FALSE);
+            {
+                // The SDK minimum (40 of 40..100) costs ~32 ms/frame at 4K in
+                // snap mode and 2.4x in video mode; allow overriding it.
+                long bw = pConfig->Profile.GetInt("/camera/ZWO/BandWidth", (int) caps.MinValue);
+                bw = wxMax((long) caps.MinValue, wxMin(bw, (long) caps.MaxValue));
+
+                Debug.Write(wxString::Format("ZWO: bandwidth = %ld (range %ld .. %ld)\n", bw, caps.MinValue,
+                                             caps.MaxValue));
+                ASISetControlValue(m_cameraId, ASI_BANDWIDTHOVERLOAD, bw, ASI_FALSE);
                 break;
+            }
             case ASI_HARDWARE_BIN:
                 // this control is not present
                 break;
