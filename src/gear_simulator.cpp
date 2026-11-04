@@ -157,6 +157,12 @@ static void load_sim_params()
 {
     SimCamParams::image_scale = pFrame->GetCameraPixelScale();
 
+    // Simulated sensor size. The defaults are the historical fixed 752x580; set
+    // /SimCam/width and /SimCam/height to emulate a real sensor (e.g. 1920x1080).
+    SimCamParams::width = (unsigned int) wxMax(64L, wxMin((long) pConfig->Profile.GetInt("/SimCam/width", 752), 8192L));
+    SimCamParams::height =
+        (unsigned int) wxMax(64L, wxMin((long) pConfig->Profile.GetInt("/SimCam/height", 580), 8192L));
+
     SimCamParams::nr_stars = pConfig->Profile.GetInt("/SimCam/nr_stars", NR_STARS_DEFAULT);
     SimCamParams::nr_hot_pixels = pConfig->Profile.GetInt("/SimCam/nr_hot_pixels", NR_HOT_PIXELS_DEFAULT);
     SimCamParams::noise_multiplier = pConfig->Profile.GetDouble("/SimCam/noise", NOISE_DEFAULT);
