@@ -167,6 +167,7 @@ Guider::Guider(wxWindow *parent, int xSize, int ySize)
     Debug.Write(wxString::Format("guider state => %s\n", StateStr(m_state)));
     m_scaleFactor = 1.0;
     m_lastDisplayRefreshUs = 0;
+    m_displayMaxFps = 0;
     m_frameIntervalMs = 0.0;
     m_lastFrameTimeUs = 0;
     m_showBookmarks = true;
@@ -224,6 +225,9 @@ void Guider::LoadProfileSettings()
 
     bool scaleImage = pConfig->Profile.GetBoolean("/guider/ScaleImage", DefaultScaleImage);
     SetScaleImage(scaleImage);
+
+    // cache: this is read on every guide frame
+    m_displayMaxFps = pConfig->Profile.GetInt("/Display/MaxFps", 0);
 
     double minHFD = pConfig->Profile.GetDouble("/guider/StarMinHFD", GetMinStarHFDDefault());
     // Handle upgrades from earlier releases that allowed zero MinHFD values.  Values below floor
@@ -777,11 +781,10 @@ void Guider::UpdateImageDisplay(usImage *pImage)
     // The paint itself is 40-80 ms of main-thread time at full-frame sizes (the
     // client-area bitmap and the rescale dominate), so optionally cap how often
     // the display is redrawn. 0 = every frame.
-    int maxFps = pConfig->Profile.GetInt("/Display/MaxFps", 0);
-    if (maxFps > 0)
+    if (m_displayMaxFps > 0)
     {
         long long now = wxGetUTCTimeUSec().GetValue();
-        long long gap = 1000000LL / maxFps;
+        long long gap = 1000000LL / m_displayMaxFps;
         if (m_lastDisplayRefreshUs != 0 && now - m_lastDisplayRefreshUs < gap)
             return; // keep the newest image for the next allowed refresh
         m_lastDisplayRefreshUs = now;

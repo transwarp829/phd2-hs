@@ -315,7 +315,13 @@ void StatsWindow::UpdateFrameRate()
         m_grid2->SetCellValue(m_frameRateRow, 1,
                               wxString::Format(" %5.1f fps (%.0f ms)", pFrame->pGuider->FrameRate(),
                                                pFrame->pGuider->FrameIntervalMs()));
-        if (pConfig->Profile.GetBoolean("/Display/PaintTiming", false))
+
+        // read once per process: the profile read itself is logged by the config layer
+        static int s_timing = -1;
+        if (s_timing < 0)
+            s_timing = pConfig->Profile.GetBoolean("/Display/PaintTiming", false) ? 1 : 0;
+
+        if (s_timing)
             Debug.Write(wxString::Format("FrameRateDisplay: %.1f fps (%.0f ms)\n", pFrame->pGuider->FrameRate(),
                                          pFrame->pGuider->FrameIntervalMs()));
     }
