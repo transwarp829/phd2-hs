@@ -445,6 +445,9 @@ bool Guider::PaintHelper(wxAutoBufferedPaintDCBase& dc, wxMemoryDC& memDC)
 {
     bool bError = false;
 
+    wxLongLong pt0 = wxGetUTCTimeUSec();
+    wxLongLong pt1 = pt0, pt2 = pt0, pt3 = pt0, pt4 = pt0;
+
     try
     {
         GUIDER_STATE state = GetState();
@@ -456,6 +459,8 @@ bool Guider::PaintHelper(wxAutoBufferedPaintDCBase& dc, wxMemoryDC& memDC)
             int wlevel = m_pCurrentImage->FiltMax;
             m_pCurrentImage->CopyToImage(&m_displayedImage, blevel, wlevel, pFrame->Stretch_gamma);
         }
+
+        pt1 = wxGetUTCTimeUSec();
 
         int imageWidth = m_displayedImage->GetWidth();
         int imageHeight = m_displayedImage->GetHeight();
@@ -511,10 +516,27 @@ bool Guider::PaintHelper(wxAutoBufferedPaintDCBase& dc, wxMemoryDC& memDC)
         // important to provide explicit color for r,g,b, optional args to Size().
         // If default args are provided wxWidgets performs some expensive histogram
         // operations.
+        pt2 = wxGetUTCTimeUSec();
         wxBitmap DisplayedBitmap(m_displayedImage->Size(wxSize(XWinSize, YWinSize), wxPoint(0, 0), 0, 0, 0));
+        pt3 = wxGetUTCTimeUSec();
         memDC.SelectObject(DisplayedBitmap);
 
         dc.Blit(0, 0, DisplayedBitmap.GetWidth(), DisplayedBitmap.GetHeight(), &memDC, 0, 0, wxCOPY, false);
+        pt4 = wxGetUTCTimeUSec();
+
+        // read once per process: the profile read itself is logged by the config layer
+        static int s_paintTiming = -1;
+        if (s_paintTiming < 0)
+            s_paintTiming = pConfig->Profile.GetBoolean("/Display/PaintTiming", false) ? 1 : 0;
+
+        if (s_paintTiming)
+        {
+            Debug.Write(wxString::Format("PaintTiming: copy=%lld rescale=%lld pad+bmp=%lld blit=%lld total=%lld  img=%dx%d win=%dx%d\n",
+                                         (pt1 - pt0).GetValue() / 1000, (pt2 - pt1).GetValue() / 1000,
+                                         (pt3 - pt2).GetValue() / 1000, (pt4 - pt3).GetValue() / 1000,
+                                         (pt4 - pt0).GetValue() / 1000, m_displayedImage->GetWidth(),
+                                         m_displayedImage->GetHeight(), XWinSize, YWinSize));
+        }
 
         int XImgSize = m_displayedImage->GetWidth();
         int YImgSize = m_displayedImage->GetHeight();
@@ -745,8 +767,10 @@ void Guider::UpdateImageDisplay(usImage *pImage)
                          pImage->Size.x, pImage->Size.y, pImage->MinADU, pImage->MaxADU, pImage->MedianADU, pImage->FiltMin,
                          pImage->FiltMax, pFrame->Stretch_gamma));
 
+    // Refresh() only marks the window dirty; the paint happens in the event loop
+    // and consecutive frames coalesce into one paint. Update() would force the
+    // paint synchronously, right here, in the middle of the capture cadence.
     Refresh();
-    Update();
 }
 
 void Guider::SetDefectMapPreview(const DefectMap *defectMap)
