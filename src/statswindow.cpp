@@ -85,7 +85,7 @@ StatsWindow::StatsWindow(wxWindow *parent)
     m_grid1->DisableDragGridSize();
 
     m_grid2 = new wxGrid(this, wxID_ANY);
-    m_grid2->CreateGrid(12, 2);
+    m_grid2->CreateGrid(13, 2);
     m_grid2->SetRowLabelSize(1);
     m_grid2->SetColLabelSize(1);
     m_grid2->EnableEditing(false);
@@ -124,6 +124,10 @@ StatsWindow::StatsWindow(wxWindow *parent)
     m_grid2->SetCellValue(row, col++, _("Camera cooler"));
     m_grid2->SetCellValue(row, col, "-99" DEGREES_SYMBOL " / -99" DEGREES_SYMBOL ", 999%");
     m_coolerRow = row;
+    ++row, col = 0;
+    m_grid2->SetCellValue(row, col++, _("Frame rate"));
+    m_grid2->SetCellValue(row, col, "nnn.n fps (nnnn ms)");
+    m_frameRateRow = row;
 
     m_grid2->AutoSize();
     m_grid2->SetCellValue(3, 1, wxEmptyString);
@@ -227,6 +231,8 @@ void StatsWindow::UpdateStats(void)
 
     m_grid2->SetCellValue(row++, col, wxString::Format(" %u", stats.star_lost_cnt));
 
+    UpdateFrameRate();
+
     m_grid1->EndBatch();
     m_grid2->EndBatch();
 }
@@ -297,6 +303,24 @@ void StatsWindow::ResetImageSize()
     m_grid2->SetCellValue(m_frameSizeRow, 1, wxEmptyString);
     m_grid2->SetCellValue(m_pixelScaleRow, 1, wxEmptyString);
     m_grid2->SetCellValue(m_pixelScaleRow + 1, 1, wxEmptyString);
+}
+
+void StatsWindow::UpdateFrameRate()
+{
+    if (!m_visible || !pFrame || !pFrame->pGuider)
+        return;
+
+    if (pFrame->pGuider->FrameIntervalMs() > 0.0)
+    {
+        m_grid2->SetCellValue(m_frameRateRow, 1,
+                              wxString::Format(" %5.1f fps (%.0f ms)", pFrame->pGuider->FrameRate(),
+                                               pFrame->pGuider->FrameIntervalMs()));
+        if (pConfig->Profile.GetBoolean("/Display/PaintTiming", false))
+            Debug.Write(wxString::Format("FrameRateDisplay: %.1f fps (%.0f ms)\n", pFrame->pGuider->FrameRate(),
+                                         pFrame->pGuider->FrameIntervalMs()));
+    }
+    else
+        m_grid2->SetCellValue(m_frameRateRow, 1, _(" --"));
 }
 
 void StatsWindow::OnTimerCooler(wxTimerEvent&)

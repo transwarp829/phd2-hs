@@ -167,6 +167,8 @@ Guider::Guider(wxWindow *parent, int xSize, int ySize)
     Debug.Write(wxString::Format("guider state => %s\n", StateStr(m_state)));
     m_scaleFactor = 1.0;
     m_lastDisplayRefreshUs = 0;
+    m_frameIntervalMs = 0.0;
+    m_lastFrameTimeUs = 0;
     m_showBookmarks = true;
     m_displayedImage = new wxImage(XWinSize, YWinSize, true);
     m_paused = PAUSE_NONE;
@@ -1308,6 +1310,16 @@ void Guider::UpdateGuideState(usImage *pImage, bool bStopping)
 
         if (pImage)
         {
+            wxLongLong now = wxGetUTCTimeUSec();
+            if (m_lastFrameTimeUs != 0)
+            {
+                double dt = (now - m_lastFrameTimeUs).GetValue() / 1000.0;
+                // ignore gaps caused by pausing, reconnecting or a stalled loop
+                if (dt > 1.0 && dt < 60000.0)
+                    m_frameIntervalMs = m_frameIntervalMs > 0.0 ? 0.8 * m_frameIntervalMs + 0.2 * dt : dt;
+            }
+            m_lastFrameTimeUs = now;
+
             // switch in the new image
 
             usImage *pPrevImage = m_pCurrentImage;
@@ -1321,7 +1333,10 @@ void Guider::UpdateGuideState(usImage *pImage, bool bStopping)
         }
 
         if (pFrame && pFrame->pStatsWin)
+        {
             pFrame->pStatsWin->UpdateImageSize(pImage->Size);
+            pFrame->pStatsWin->UpdateFrameRate();
+        }
 
         if (bStopping)
         {

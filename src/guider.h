@@ -158,6 +158,8 @@ class Guider : public wxWindow
     bool m_avgDistanceNeedReset;
     GUIDER_STATE m_state;
     usImage *m_pCurrentImage;
+    double m_frameIntervalMs;   // smoothed wall-clock time between delivered frames
+    wxLongLong m_lastFrameTimeUs;
     bool m_scaleImage;
     bool m_lockPosIsSticky;
     bool m_ignoreLostStarLooping;
@@ -318,6 +320,8 @@ public:
     virtual wxString GetStarCount() const { return wxEmptyString; }
 
     usImage *CurrentImage() const;
+    double FrameIntervalMs() const;
+    double FrameRate() const;
     wxImage *DisplayedImage() const;
     double ScaleFactor() const;
 
@@ -399,6 +403,16 @@ inline void Guider::SetPolarAlignCircleCorrection(double val)
 inline usImage *Guider::CurrentImage() const
 {
     return m_pCurrentImage;
+}
+
+inline double Guider::FrameIntervalMs() const
+{
+    return m_frameIntervalMs;
+}
+
+inline double Guider::FrameRate() const
+{
+    return m_frameIntervalMs > 0.0 ? 1000.0 / m_frameIntervalMs : 0.0;
 }
 
 inline wxImage *Guider::DisplayedImage() const

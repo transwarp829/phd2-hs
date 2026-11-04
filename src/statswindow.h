@@ -46,6 +46,7 @@ class StatsWindow : public wxWindow
     int m_frameSizeRow;
     int m_pixelScaleRow;
     int m_coolerRow;
+    int m_frameRateRow;
     wxSize m_lastFrameSize;
 
     void OnButtonLength(wxCommandEvent&);
@@ -61,6 +62,7 @@ public:
     void UpdateScopePointing();
     void UpdateCooler();
     void UpdateImageSize(const wxSize& frameSize);
+    void UpdateFrameRate();
     void ResetImageSize();
     void SetState(bool is_active);
 
