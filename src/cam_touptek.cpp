@@ -447,7 +447,8 @@ bool CameraToupTek::Connect(const wxString& camIdArg)
     // end of the range. At full resolution the speed cap, not the sensor, can be
     // what limits the frame rate, so allow overriding it.
     // -1 means the camera's own maximum; the connect path used to pin this to 0
-    m_speed = pConfig->Profile.GetInt("/camera/ToupTek/Speed", fastTransfer ? -1 : 0);
+    int const requestedSpeed = pConfig->Profile.GetInt("/camera/ToupTek/Speed", -1);
+    m_speed = requestedSpeed >= 0 ? requestedSpeed : (fastTransfer ? -1 : 0);
     if (m_speed < 0)
         m_speed = info->model ? (int) info->model->maxspeed : 0;
     if (info->model && m_speed > (int) info->model->maxspeed)
@@ -818,6 +819,7 @@ struct ToupTekCameraDlg : public wxDialog
     wxRadioButton *m_bpp8;
     wxRadioButton *m_bpp16;
     wxCheckBox *m_fastTransfer;
+    wxChoice *m_speedChoice;
     ToupTekCameraDlg();
 };
 
@@ -841,6 +843,17 @@ ToupTekCameraDlg::ToupTekCameraDlg() : wxDialog(wxGetApp().GetTopWindow(), wxID_
                                   "frame, lowest transfer speed, real-time pacing.\r\n"
                                   "Takes effect on the next connection."));
     sbSizerFast->Add(m_fastTransfer, 0, wxALL, 5);
+
+    wxArrayString speedChoices;
+    speedChoices.Add(_("Auto"));
+    for (int i = 0; i <= 3; ++i)
+        speedChoices.Add(wxString::Format("%d", i));
+    sbSizerFast->Add(new wxStaticText(this, wxID_ANY, _("USB speed")), 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
+    m_speedChoice = new wxChoice(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, speedChoices);
+    m_speedChoice->SetToolTip(_("Toupcam_put_Speed, 0 .. the camera's maximum. Auto follows the\r\n"
+                                "Fast transfer box. Takes effect on the next connection."));
+    sbSizerFast->Add(m_speedChoice, 0, wxALL, 5);
+
     bSizer12->Add(sbSizerFast, 1, wxEXPAND, 5);
 
     wxStdDialogButtonSizer *sdbSizer2 = new wxStdDialogButtonSizer();
@@ -867,11 +880,15 @@ void CameraToupTek::ShowPropertyDialog()
     else
         dlg.m_bpp16->SetValue(true);
     dlg.m_fastTransfer->SetValue(pConfig->Profile.GetBoolean("/camera/ToupTek/FastTransfer", true));
+    int speedValue = pConfig->Profile.GetInt("/camera/ToupTek/Speed", -1);
+    dlg.m_speedChoice->SetSelection(speedValue < 0 ? 0 : wxMin(speedValue, 3) + 1);
     if (dlg.ShowModal() == wxID_OK)
     {
         m_cam.m_bpp = dlg.m_bpp8->GetValue() ? 8 : 16;
         pConfig->Profile.SetInt("/camera/ToupTek/bpp", m_cam.m_bpp);
         pConfig->Profile.SetBoolean("/camera/ToupTek/FastTransfer", dlg.m_fastTransfer->GetValue());
+        int const sel = dlg.m_speedChoice->GetSelection();
+        pConfig->Profile.SetInt("/camera/ToupTek/Speed", sel <= 0 ? -1 : sel - 1);
     }
 }
 

@@ -138,6 +138,7 @@ struct ZWOCameraDlg : public wxDialog
 {
     wxRadioButton *m_bpp8;
     wxRadioButton *m_bpp16;
+    wxSpinCtrl *m_bandwidth;
     ZWOCameraDlg();
 };
 
@@ -153,6 +154,16 @@ ZWOCameraDlg::ZWOCameraDlg() : wxDialog(wxGetApp().GetTopWindow(), wxID_ANY, _("
     sbSizer3->Add(m_bpp8, 0, wxALL, 5);
     sbSizer3->Add(m_bpp16, 0, wxALL, 5);
     bSizer12->Add(sbSizer3, 1, wxEXPAND, 5);
+
+    wxStaticBoxSizer *sbSizerBw = new wxStaticBoxSizer(new wxStaticBox(this, wxID_ANY, _("Transfer")), wxHORIZONTAL);
+    sbSizerBw->Add(new wxStaticText(this, wxID_ANY, _("USB bandwidth")), 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
+    // ASI_BANDWIDTHOVERLOAD is 40..100 on every ASI body; the driver clamps to the
+    // range the SDK reports for the connected camera anyway.
+    m_bandwidth = new wxSpinCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize,
+                                 wxSP_ARROW_KEYS, 40, 100, 40);
+    m_bandwidth->SetToolTip(_("USB bandwidth overload, 40 .. 100. Higher values give shorter readout on fast links; the lowest value is the most tolerant of marginal cables. Takes effect on the next connection."));
+    sbSizerBw->Add(m_bandwidth, 0, wxALL, 5);
+    bSizer12->Add(sbSizerBw, 1, wxEXPAND, 5);
 
     wxStdDialogButtonSizer *sdbSizer2 = new wxStdDialogButtonSizer();
     wxButton *sdbSizer2OK = new wxButton(this, wxID_OK);
@@ -177,10 +188,12 @@ void Camera_ZWO::ShowPropertyDialog()
         dlg.m_bpp8->SetValue(true);
     else
         dlg.m_bpp16->SetValue(true);
+    dlg.m_bandwidth->SetValue(pConfig->Profile.GetInt("/camera/ZWO/BandWidth", 40));
     if (dlg.ShowModal() == wxID_OK)
     {
         m_bpp = dlg.m_bpp8->GetValue() ? 8 : 16;
         pConfig->Profile.SetInt("/camera/ZWO/bpp", m_bpp);
+        pConfig->Profile.SetInt("/camera/ZWO/BandWidth", dlg.m_bandwidth->GetValue());
     }
 }
 
