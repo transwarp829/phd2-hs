@@ -131,6 +131,7 @@ StatsWindow::StatsWindow(wxWindow *parent)
 
     m_grid2->AutoSize();
     m_grid2->SetCellValue(3, 1, wxEmptyString);
+    m_grid2->SetCellValue(m_frameRateRow, 1, wxEmptyString);
     m_grid2->SetCellValue(m_pixelScaleRow + 1, 1, wxEmptyString); // field of view row
     m_grid2->ClearSelection();
     m_grid2->DisableDragGridSize();
@@ -326,7 +327,7 @@ void StatsWindow::UpdateFrameRate()
                                          pFrame->pGuider->FrameIntervalMs()));
     }
     else
-        m_grid2->SetCellValue(m_frameRateRow, 1, _(" --"));
+        m_grid2->SetCellValue(m_frameRateRow, 1, wxEmptyString);
 }
 
 void StatsWindow::OnTimerCooler(wxTimerEvent&)
