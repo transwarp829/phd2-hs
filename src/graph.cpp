@@ -572,7 +572,9 @@ void GraphLogWindow::AppendData(const GuideStepInfo& step)
 
     if (m_visible)
     {
-        Refresh();
+        // only the plot area changes per step; refreshing the whole pane also
+        // repaints the control panes (sliders, labels) and their backgrounds
+        m_pClient->Refresh();
     }
 }
 
@@ -1246,9 +1248,34 @@ enum
     GRAPH_BORDER = 5
 };
 
+// measures the whole paint including the buffered DC's flush: declared before the
+// DC, so it is destroyed after it
+struct GraphPaintTimer
+{
+    wxLongLong t0;
+    wxWindow *win;
+    GraphPaintTimer(wxWindow *w) : t0(wxGetUTCTimeUSec()), win(w) { }
+    ~GraphPaintTimer()
+    {
+        static int on = -1;
+        if (on < 0)
+            on = pConfig->Profile.GetBoolean("/Display/PaintTiming", false) ? 1 : 0;
+        if (on)
+        {
+            wxSize sz = win->GetClientSize();
+            Debug.Write(wxString::Format("GraphPaint: %lld ms %dx%d\n", (wxGetUTCTimeUSec() - t0).GetValue() / 1000,
+                                         sz.x, sz.y));
+        }
+    }
+};
+
 void GraphLogClientWindow::OnPaint(wxPaintEvent& WXUNUSED(evt))
 {
-    wxAutoBufferedPaintDC dc(this);
+    GraphPaintTimer gptimer(this);
+
+    // the whole client area is filled by dc.Clear() below, so the extra
+    // client-area bitmap of the buffered DC is pure cost here
+    wxPaintDC dc(this);
 
     wxSize size(GetClientSize());
     wxSize center(size.x / 2, size.y / 2);
