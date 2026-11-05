@@ -48,6 +48,7 @@
 
 #ifdef __WXMSW__
 # include <wx/msw/wrapwin.h>
+# include <mmsystem.h>
 #endif
 
 // #define DEVBUILD
@@ -493,8 +494,12 @@ bool PhdApp::OnInit()
     // displays scaled above 100% -- text renders at 96 DPI and gets resampled,
     // which reads as "blurry, as if scaled". Must run before any window exists.
     ::SetProcessDPIAware();
-#endif
 
+    // Ask the system for 1 ms timer resolution for the life of the process.
+    // Without it, Sleep() and wait timeouts round up to the 15.6 ms default,
+    // which lands directly in the guide loop period at short exposures.
+    ::timeBeginPeriod(1);
+#endif
 #ifdef __APPLE__
     // for newer versions of OSX the app will hang if the wx log code
     // tries to display a message box in OnOnit.  As a workaround send
@@ -647,6 +652,10 @@ int PhdApp::OnExit()
     assert(!pMount);
     assert(!pSecondaryMount);
     assert(!pCamera);
+
+#ifdef __WXMSW__
+    ::timeEndPeriod(1);
+#endif
 
     ImageLogger::Destroy();
 

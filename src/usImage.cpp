@@ -155,6 +155,7 @@ bool usImage::Init(const wxSize& size)
     Size = size;
     Subframe = wxRect(0, 0, 0, 0);
     MinADU = MaxADU = MedianADU = 0;
+    StatsValid = false;
 
     if (NPixels != prev)
     {
@@ -233,6 +234,8 @@ void usImage::CalcStats()
 
         delete[] tmpdata;
     }
+
+    StatsValid = true;
 }
 
 static unsigned char *buildGammaLookupTable(int blevel, int wlevel, double power)

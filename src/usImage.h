@@ -48,6 +48,7 @@ public:
     unsigned short MedianADU;
     unsigned short FiltMin;
     unsigned short FiltMax;
+    bool StatsValid; // MinADU/MaxADU/MedianADU/FiltMin/FiltMax have been computed for this frame
     wxDateTime ImgStartTime;
     int ImgExpDur; // milli-seconds
     int ImgStackCnt;
@@ -58,8 +59,8 @@ public:
     unsigned int FrameNum;
 
     usImage()
-        : ImageData(nullptr), NPixels(0), MinADU(0), MaxADU(0), MedianADU(0), FiltMin(0), FiltMax(0), ImgExpDur(0),
-          ImgStackCnt(1), Binning(0), BitsPerPixel(0), Gain(0), Pedestal(0), FrameNum(0)
+        : ImageData(nullptr), NPixels(0), MinADU(0), MaxADU(0), MedianADU(0), FiltMin(0), FiltMax(0), StatsValid(false),
+          ImgExpDur(0), ImgStackCnt(1), Binning(0), BitsPerPixel(0), Gain(0), Pedestal(0), FrameNum(0)
     {
     }
     ~usImage() { delete[] ImageData; }

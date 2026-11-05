@@ -233,7 +233,9 @@ bool WorkerThread::HandleExpose(EXPOSE_REQUEST *req)
                 break;
             }
 
-            req->pImage->CalcStats();
+            // CalcStats is deliberately not done here: it feeds only the display
+            // stretch, so it runs on the main thread after the guide step has been
+            // issued (see Guider::UpdateImageDisplay / PaintHelper).
         }
     }
     catch (const wxString& Msg)

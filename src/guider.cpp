@@ -462,6 +462,11 @@ bool Guider::PaintHelper(wxAutoBufferedPaintDCBase& dc, wxMemoryDC& memDC)
 
         if (m_pCurrentImage->ImageData)
         {
+            // stats may not have been computed yet: they are made on demand for
+            // the display, not in the capture worker
+            if (!m_pCurrentImage->StatsValid)
+                m_pCurrentImage->CalcStats();
+
             int blevel = m_pCurrentImage->FiltMin;
             int wlevel = m_pCurrentImage->FiltMax;
             m_pCurrentImage->CopyToImage(&m_displayedImage, blevel, wlevel, pFrame->Stretch_gamma);
@@ -769,11 +774,6 @@ void Guider::UpdateImageDisplay(usImage *pImage)
         pImage = m_pCurrentImage;
     }
 
-    Debug.Write(
-        wxString::Format("UpdateImageDisplay: Size=(%d,%d) min=%u, max=%u, med=%u, FiltMin=%u, FiltMax=%u, Gamma=%.3f\n",
-                         pImage->Size.x, pImage->Size.y, pImage->MinADU, pImage->MaxADU, pImage->MedianADU, pImage->FiltMin,
-                         pImage->FiltMax, pFrame->Stretch_gamma));
-
     // Refresh() only marks the window dirty; the paint happens in the event loop
     // and consecutive frames coalesce into one paint. Update() would force the
     // paint synchronously, right here, in the middle of the capture cadence.
@@ -789,6 +789,16 @@ void Guider::UpdateImageDisplay(usImage *pImage)
             return; // keep the newest image for the next allowed refresh
         m_lastDisplayRefreshUs = now;
     }
+
+    // Stats feed only the display stretch, so they are computed here - after the
+    // guide step has been issued - rather than in the capture worker.
+    if (!pImage->StatsValid)
+        pImage->CalcStats();
+
+    Debug.Write(
+        wxString::Format("UpdateImageDisplay: Size=(%d,%d) min=%u, max=%u, med=%u, FiltMin=%u, FiltMax=%u, Gamma=%.3f\n",
+                         pImage->Size.x, pImage->Size.y, pImage->MinADU, pImage->MaxADU, pImage->MedianADU, pImage->FiltMin,
+                         pImage->FiltMax, pFrame->Stretch_gamma));
 
     Refresh();
 }

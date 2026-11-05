@@ -871,6 +871,11 @@ target_link_libraries(phd2
                       MPIIS_GP GPGuider # GP Guider
                       ${PHD_LINK_EXTERNAL})
 
+if(WIN32)
+  # timeBeginPeriod / timeEndPeriod
+  target_link_libraries(phd2 winmm)
+endif()
+
 ################################################################
 #
 # documentation + translation
