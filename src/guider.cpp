@@ -171,6 +171,9 @@ Guider::Guider(wxWindow *parent, int xSize, int ySize)
     m_lastFrameTimeUs = 0;
     m_showBookmarks = true;
     m_displayedImage = new wxImage(XWinSize, YWinSize, true);
+    m_starCropImage = NULL;
+    m_starCropX0 = m_starCropY0 = m_starCropSz = 0;
+    m_starCropCx = m_starCropCy = 0.0;
     m_displayedFrameNum = 0;
     m_paused = PAUSE_NONE;
     m_starFoundTimestamp = 0;
@@ -213,6 +216,7 @@ Guider::Guider(wxWindow *parent, int xSize, int ySize)
 Guider::~Guider()
 {
     delete m_displayedImage;
+    delete m_starCropImage;
     delete m_pCurrentImage;
 
     s_deflectionLogger.Uninit();
@@ -609,6 +613,88 @@ bool Guider::PaintHelper(wxDC& dc, wxMemoryDC& memDC)
 
                 if (dstW > 0 && dstH > 0 && (dstW != srcW || dstH != srcH))
                     m_displayedImage->Rescale(dstW, dstH, wxIMAGE_QUALITY_BILINEAR);
+            }
+
+            // Small crop around the lock for the star profile window. Built here,
+            // where the image is known to be the current frame and still owned: the
+            // capture thread deletes it when the next frame is swapped in, so the
+            // paint handler must not read m_pCurrentImage itself.
+            {
+                const int W = (int) m_pCurrentImage->Size.x;
+                const int H = (int) m_pCurrentImage->Size.y;
+                const int cxp = ROUND(LockPosition().X);
+                const int cyp = ROUND(LockPosition().Y);
+                int half = 15;
+                if (m_scaleFactor > 0.0 && m_scaleFactor < 1.0)
+                {
+                    const double sized = 15.0 / m_scaleFactor;
+                    if (sized > 15.0 && sized < 256.0)
+                        half = (int) sized;
+                }
+                if (cxp >= half && cyp >= half && cxp + half < W && cyp + half < H)
+                {
+                    const int cw = half * 2;
+                    if (!m_starCropImage || !m_starCropImage->Ok() || m_starCropImage->GetWidth() != cw)
+                    {
+                        delete m_starCropImage;
+                        m_starCropImage = new wxImage(cw, cw, false);
+                    }
+                    unsigned char *lut = usImage::BuildGammaLut(m_pCurrentImage->FiltMin, m_pCurrentImage->FiltMax,
+                                                                pFrame->Stretch_gamma);
+                    unsigned char *dst = m_starCropImage->GetData();
+                    if (dst && lut)
+                    {
+                        const unsigned short *base = m_pCurrentImage->ImageData +
+                            (size_t) (cyp - half) * W + (cxp - half);
+                        for (int y = 0; y < cw; ++y)
+                        {
+                            const unsigned short *row = base + (size_t) y * W;
+                            for (int x = 0; x < cw; ++x)
+                            {
+                                unsigned char d = lut[row[x]];
+                                *dst++ = d;
+                                *dst++ = d;
+                                *dst++ = d;
+                            }
+                        }
+                        m_starCropX0 = cxp - half;
+                        m_starCropY0 = cyp - half;
+                        m_starCropSz = half;
+
+                        // centroid from the sensor pixels, background subtracted:
+                        // the same numbers the crosses are placed from, so the star
+                        // profile can be checked without any rendering in between
+                        unsigned short lo = 0xffff, hi = 0;
+                        for (int y = 0; y < cw; ++y)
+                        {
+                            const unsigned short *row = base + (size_t) y * W;
+                            for (int x = 0; x < cw; ++x)
+                            {
+                                if (row[x] < lo) lo = row[x];
+                                if (row[x] > hi) hi = row[x];
+                            }
+                        }
+                        const double thr = lo + 0.1 * ((double) hi - lo);
+                        double sw = 0.0, swx = 0.0, swy = 0.0;
+                        for (int y = 0; y < cw; ++y)
+                        {
+                            const unsigned short *row = base + (size_t) y * W;
+                            for (int x = 0; x < cw; ++x)
+                            {
+                                const double v = row[x] > thr ? row[x] - thr : 0.0;
+                                sw += v;
+                                swx += v * (cxp - half + x);
+                                swy += v * (cyp - half + y);
+                            }
+                        }
+                        if (sw > 0.0)
+                        {
+                            m_starCropCx = swx / sw;
+                            m_starCropCy = swy / sw;
+                        }
+                    }
+                    delete[] lut;
+                }
             }
         }
 

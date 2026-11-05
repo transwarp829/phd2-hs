@@ -132,7 +132,9 @@ void ProfileWindow::UpdateData(const usImage *img, float xpos, float ypos)
 
 void ProfileWindow::OnPaint(wxPaintEvent& WXUNUSED(evt))
 {
-    wxAutoBufferedPaintDC dc(this);
+    // Everything is repainted from scratch below, so the buffered DC only added
+    // a full-window copy per frame. Same change as the graph window.
+    wxPaintDC dc(this);
 
     dc.SetBackground(wxColour(10, 30, 30));
     dc.Clear();
@@ -276,83 +278,65 @@ void ProfileWindow::OnPaint(wxPaintEvent& WXUNUSED(evt))
     dc.SetTextForeground(wxColour(255, 0, 0));
 
     // JBW: draw zoomed guidestar subframe (todo: make constants symbolic)
-    wxImage *img = pFrame->pGuider->DisplayedImage();
-    double scaleFactor = pFrame->pGuider->ScaleFactor();
+    wxImage *crop = pFrame->pGuider->StarCropImage();
     imageLeftMargin = (xsize - 15) / 2;
-    if (img)
+    if (crop)
     {
         int width = xsize - imageLeftMargin - 5;
         if (width > ysize + 5)
             width = ysize - 5;
-        int midwidth = width / 2;
-        // grab width(30) px box around lock pos, scale by 2 & display next to profile
-        double LockX = pFrame->pGuider->LockPosition().X * scaleFactor;
-        double LockY = pFrame->pGuider->LockPosition().Y * scaleFactor;
-        // grab the subframe
-        wxBitmap dBmp(*img);
-        // Star region scaling is useful only if scaleFactor >=1. Huge sensors result in a scaleFactor << 1 and an unusable
-        // magnified star view
-        int scaledSize = wxMax(15 * scaleFactor, 15);
-        int lkx = ROUND(LockX);
-        int l = std::max(0, lkx - scaledSize);
-        int r = std::min(dBmp.GetWidth() - 1, lkx + scaledSize);
-        int w = std::min(lkx - l, r - lkx);
-        int lky = ROUND(LockY);
-        int t = std::max(0, lky - scaledSize);
-        int b = std::min(dBmp.GetHeight() - 1, lky + scaledSize);
-        int h = std::min(lky - t, b - lky);
-        int sz = std::min(w, h);
-        // scale by 2
-        wxBitmap subDBmp = dBmp.GetSubBitmap(wxRect(lkx - sz, lky - sz, sz * 2, sz * 2));
-        wxImage subDImg = subDBmp.ConvertToImage();
-        wxMemoryDC tmpMdc;
-        wxString toggleMsg;
-        wxImageResizeQuality resizeQuality;
-        // Build the temp DC with one of two scaling options
-        if (!rawMode)
-        {
-            resizeQuality = wxIMAGE_QUALITY_HIGH;
-            toggleMsg = _("Click image for raw view");
-        }
-        else
-        {
-            resizeQuality = wxIMAGE_QUALITY_NEAREST;
-            toggleMsg = _("Click image for interpolated view");
-        }
-        wxBitmap zoomedDBmp(subDImg.Rescale(width, width, resizeQuality));
-        tmpMdc.SelectObject(zoomedDBmp);
-        int imgTop = 30;
-        imageBottom = imgTop + width;
-        // blit into profile DC
-        dc.Blit(imageLeftMargin, imgTop, width, width, &tmpMdc, 0, 0, wxCOPY, false);
-        // add text cue to allow switching between 'high quality' and 'nearest neighhbor' scaling
-        dc.SetFont(smallFont);
-        dc.DrawText(toggleMsg, imageLeftMargin, imgTop - smallFontHeight);
 
-        // The crop is centred on the integer display pixel (lkx, lky), not on the
-        // fractional lock point, so every position has to be mapped through that
-        // integer anchor. Mapping from the fractional LockX instead put both
-        // crosses off by the lock point's sub-pixel remainder times the zoom -
-        // up to half a display pixel, i.e. several screen pixels at 10x.
-        const double zoom = (sz > 0) ? width / (sz * 2.0) : 1.0;
-        const double curX = pFrame->pGuider->CurrentPosition().X * scaleFactor;
-        const double curY = pFrame->pGuider->CurrentPosition().Y * scaleFactor;
-        // wxImage::Rescale maps pixel centres: destination pixel k samples source
-        // coordinate (k + 0.5)/zoom - 0.5. Ignoring that half pixel puts both
-        // crosses 0.5*(zoom-1) up and to the left of where they belong - a
-        // constant offset, independent of the star and of the resampling mode.
-        const double halfAdjust = 0.5 * zoom - 0.5;
-        auto toScreenX = [&](double u) {
-            return imageLeftMargin + midwidth + (u - lkx) * zoom + halfAdjust;
-        };
-        auto toScreenY = [&](double u) { return imgTop + midwidth + (u - lky) * zoom + halfAdjust; };
+        // The crop is taken from the raw frame in image coordinates (see
+        // Guider::UpdateImageDisplay), so the crosses and the pixels they are
+        // drawn over share one coordinate system. Cropping the rescaled
+        // DisplayedImage instead mixed image coordinates with display
+        // coordinates: a scalar scaleFactor cannot represent the
+        // integer-truncated dstW/srcW and dstH/srcH mappings at once.
+        const int sx0 = pFrame->pGuider->StarCropX0();
+        const int sy0 = pFrame->pGuider->StarCropY0();
+        const int sz = pFrame->pGuider->StarCropSize();
+        const double lockX = pFrame->pGuider->LockPosition().X;
+        const double lockY = pFrame->pGuider->LockPosition().Y;
+        const double curX = pFrame->pGuider->CurrentPosition().X;
+        const double curY = pFrame->pGuider->CurrentPosition().Y;
 
-        // green dotted cross = lock position
-        dc.SetPen(wxPen(wxColor(0, 200, 0), 1, wxPENSTYLE_DOT));
-        dc.DrawLine(imageLeftMargin, toScreenY(LockY), imageLeftMargin + width, toScreenY(LockY));
-        dc.DrawLine(toScreenX(LockX), imgTop, toScreenX(LockX), width + imgTop);
-        if (sz > 0)
+        if (sz > 0 && width > 1)
         {
+            wxString toggleMsg;
+            wxImageResizeQuality resizeQuality;
+            if (!rawMode)
+            {
+                resizeQuality = wxIMAGE_QUALITY_HIGH;
+                toggleMsg = _("Click image for raw view");
+            }
+            else
+            {
+                resizeQuality = wxIMAGE_QUALITY_NEAREST;
+                toggleMsg = _("Click image for interpolated view");
+            }
+
+            wxBitmap zoomedDBmp(crop->Rescale(width, width, resizeQuality));
+            wxMemoryDC tmpMdc;
+            tmpMdc.SelectObject(zoomedDBmp);
+
+            int imgTop = 30;
+            imageBottom = imgTop + width;
+            dc.Blit(imageLeftMargin, imgTop, width, width, &tmpMdc, 0, 0, wxCOPY, false);
+            dc.SetFont(smallFont);
+            dc.DrawText(toggleMsg, imageLeftMargin, imgTop - smallFontHeight);
+
+            // The crop is centred on the lock, so a source pixel index u lands at
+            // (u - sx0) * zoom in the blitted bitmap: no extra centre term, and
+            // the star's index coordinate maps straight through.
+            const double zoom = width / (sz * 2.0);
+            auto toScreenX = [&](double u) { return imageLeftMargin + (u - sx0) * zoom; };
+            auto toScreenY = [&](double u) { return imgTop + (u - sy0) * zoom; };
+
+            // green dotted cross = lock position
+            dc.SetPen(wxPen(wxColor(0, 200, 0), 1, wxPENSTYLE_DOT));
+            dc.DrawLine(imageLeftMargin, toScreenY(lockY), imageLeftMargin + width, toScreenY(lockY));
+            dc.DrawLine(toScreenX(lockX), imgTop, toScreenX(lockX), width + imgTop);
+
             // red cross = current centroid; its distance from the green cross is
             // exactly the guide error
             double starX = toScreenX(curX), starY = toScreenY(curY);
@@ -364,26 +348,17 @@ void ProfileWindow::OnPaint(wxPaintEvent& WXUNUSED(evt))
                 s_timing = pConfig->Profile.GetBoolean("/Display/PaintTiming", false) ? 1 : 0;
             if (s_timing)
             {
-                wxImage zi = zoomedDBmp.ConvertToImage();
-                const unsigned char *zp = zi.GetData();
-                double cx = 0, cy = 0, cw = 0;
-                for (int yy = 0; yy < width; ++yy)
-                    for (int xx = 0; xx < width; ++xx)
-                    {
-                        double v = zp[(yy * width + xx) * 3];
-                        v = v * v; // square: the star has to dominate the noise floor
-                        cx += v * xx;
-                        cy += v * yy;
-                        cw += v;
-                    }
+                // The crop's centroid was computed from the sensor pixels where the
+                // crop was taken, so this compares the drawn cross with the star
+                // without any rescale or stretch in between.
                 Debug.Write(wxString::Format(
-                    "StarProfile: zoom=%.2f sz=%d width=%d mid=%d  shownFrame=%u curFrame=%u  "
-                    "cross=(%.1f,%.1f) star=(%.1f,%.1f) delta=(%.1f,%.1f) px\n",
-                    zoom, sz, width, midwidth, pFrame->pGuider->DisplayedFrameNum(),
-                    pFrame->pGuider->CurrentImage() ? pFrame->pGuider->CurrentImage()->FrameNum : 0,
-                    starX - imageLeftMargin, starY - imgTop,
-                    cw > 0 ? cx / cw : -1, cw > 0 ? cy / cw : -1,
-                    cw > 0 ? cx / cw - (starX - imageLeftMargin) : 0, cw > 0 ? cy / cw - (starY - imgTop) : 0));
+                    "StarProfile: zoom=%.2f sz=%d width=%d  cross=(%.1f,%.1f)  pos=(%.2f,%.2f)  "
+                    "raw=(%.2f,%.2f)  err=(%.2f,%.2f) image px\n",
+                    zoom, sz, width, starX - imageLeftMargin, starY - imgTop,
+                    curX, curY,
+                    pFrame->pGuider->StarCropCentroidX(), pFrame->pGuider->StarCropCentroidY(),
+                    pFrame->pGuider->StarCropCentroidX() - curX,
+                    pFrame->pGuider->StarCropCentroidY() - curY));
             }
 
             if (starX >= imageLeftMargin)

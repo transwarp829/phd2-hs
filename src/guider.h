@@ -138,6 +138,12 @@ class Guider : public wxWindow
 {
     wxImage *m_displayedImage;
     unsigned int m_displayedFrameNum; // frame the displayed image was rendered from
+    // crop around the lock for the star profile window, built on the thread
+    // that owns the image (the capture thread deletes the frame the paint
+    // handler would otherwise be reading)
+    wxImage *m_starCropImage;
+    int m_starCropX0, m_starCropY0, m_starCropSz;
+    double m_starCropCx, m_starCropCy; // centroid of the crop, from the raw pixels
     bool m_fusedRender;
     OVERLAY_MODE m_overlayMode;
     OverlaySlitCoords m_overlaySlitCoords;
@@ -324,6 +330,12 @@ public:
     double FrameIntervalMs() const;
     double FrameRate() const;
     wxImage *DisplayedImage() const;
+    wxImage *StarCropImage() const;
+    int StarCropX0() const;
+    int StarCropY0() const;
+    int StarCropSize() const;
+    double StarCropCentroidX() const;
+    double StarCropCentroidY() const;
     unsigned int DisplayedFrameNum() const;
     double ScaleFactor() const;
 
@@ -420,6 +432,36 @@ inline double Guider::FrameRate() const
 inline wxImage *Guider::DisplayedImage() const
 {
     return m_displayedImage;
+}
+
+inline wxImage *Guider::StarCropImage() const
+{
+    return m_starCropImage;
+}
+
+inline int Guider::StarCropX0() const
+{
+    return m_starCropX0;
+}
+
+inline int Guider::StarCropY0() const
+{
+    return m_starCropY0;
+}
+
+inline int Guider::StarCropSize() const
+{
+    return m_starCropSz;
+}
+
+inline double Guider::StarCropCentroidX() const
+{
+    return m_starCropCx;
+}
+
+inline double Guider::StarCropCentroidY() const
+{
+    return m_starCropCy;
 }
 
 inline unsigned int Guider::DisplayedFrameNum() const
