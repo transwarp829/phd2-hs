@@ -337,8 +337,15 @@ void ProfileWindow::OnPaint(wxPaintEvent& WXUNUSED(evt))
         const double zoom = (sz > 0) ? width / (sz * 2.0) : 1.0;
         const double curX = pFrame->pGuider->CurrentPosition().X * scaleFactor;
         const double curY = pFrame->pGuider->CurrentPosition().Y * scaleFactor;
-        auto toScreenX = [&](double u) { return imageLeftMargin + midwidth + (u - lkx) * zoom; };
-        auto toScreenY = [&](double u) { return imgTop + midwidth + (u - lky) * zoom; };
+        // wxImage::Rescale maps pixel centres: destination pixel k samples source
+        // coordinate (k + 0.5)/zoom - 0.5. Ignoring that half pixel puts both
+        // crosses 0.5*(zoom-1) up and to the left of where they belong - a
+        // constant offset, independent of the star and of the resampling mode.
+        const double halfAdjust = 0.5 * zoom - 0.5;
+        auto toScreenX = [&](double u) {
+            return imageLeftMargin + midwidth + (u - lkx) * zoom + halfAdjust;
+        };
+        auto toScreenY = [&](double u) { return imgTop + midwidth + (u - lky) * zoom + halfAdjust; };
 
         // green dotted cross = lock position
         dc.SetPen(wxPen(wxColor(0, 200, 0), 1, wxPENSTYLE_DOT));
