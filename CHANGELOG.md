@@ -54,6 +54,10 @@
 - `usImage::CalcStats` 用已有直方图取 `FiltMin/FiltMax`，去掉整帧 `Median3` 和第二趟扫描；
   `MinADU/MaxADU/MedianADU` 不变（8.3 MP 下 90 → 10 ms）（`c0a5454`）
 - 模拟器传感器尺寸可配置：`/SimCam/width`、`/SimCam/height`（默认 752x580）（`4a1129e`）
+- ToupTek 可选自由运行视频模式：`/camera/ToupTek/VideoMode`（默认 **0** = 上游的每帧软件触发）。
+  驱动一直设的是 `TOUPCAM_OPTION_TRIGGER=1`，而 SDK 默认是 0（视频模式）。
+  实测 AE676M 3536x3536、10 ms 曝光：**触发 296 ms/帧（3.4 fps）→ 视频 98 ms/帧（10.2 fps）**，
+  每帧固定开销从 ~269 ms 降到 ~72 ms（`fcba816`）
 
 ## 实测
 
@@ -63,6 +67,13 @@
 |---|---|---|
 | `frame_download_ms=50`（模拟器默认） | ~100 ms（10 fps） | 假下载 50 + 应用侧 ~40 |
 | `frame_download_ms=0` | **59 ms（17 fps）** | 模拟器成像 28、导星脉冲 24、重绘 12、星点+算法 9（含探针） |
+
+ToupTek AE676M（3536x3536，10 ms 曝光，PHD2 LOOPING）：
+
+| 模式 | 周期 | 曝光+读出 |
+|---|---|---|
+| 软件触发（`VideoMode=0`，上游行为） | 296 ms（3.4 fps） | 279 ms |
+| 视频模式（`VideoMode=1`） | **98 ms（10.2 fps）** | 82 ms |
 
 结论：应用侧目前只剩图像重绘约 12 ms。真实相机的 1080p 视频模式读出 11 ms、没有模拟器
 那 18 ms 成像开销，按现开销算 30 fps 可达。
