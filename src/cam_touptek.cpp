@@ -242,6 +242,9 @@ struct ToupCam
 class CameraToupTek : public GuideCamera
 {
     ToupCam m_cam;
+    // TOUPCAM_OPTION_TRIGGER: 1 = one software trigger per frame (upstream
+    // behaviour), 0 = free-running video mode, which is the SDK default
+    bool m_videoMode;
 
 public:
     CameraToupTek();
@@ -268,6 +271,7 @@ public:
 
 CameraToupTek::CameraToupTek()
 {
+    m_videoMode = false;
     Debug.Write(wxString::Format("TOUPTEK: ToupCam SDK version %s\n", Toupcam_Version()));
 
     Name = _T("ToupTek Camera");
@@ -454,7 +458,13 @@ bool CameraToupTek::Connect(const wxString& camIdArg)
     // m_cam.SetOption(TOUPCAM_OPTION_CURVE, 0); // resetting this one fails on all the cameras I have
     m_cam.SetOption(TOUPCAM_OPTION_COLORMATIX, 0);
     m_cam.SetOption(TOUPCAM_OPTION_WBGAIN, 0);
-    m_cam.SetOption(TOUPCAM_OPTION_TRIGGER, 1); // software trigger
+    // Free-running video mode is the SDK default but carries the stale-frame
+    // risk that matters at long exposures, so keep the trigger default and
+    // let the profile opt in.
+    m_videoMode = pConfig->Profile.GetBoolean("/camera/ToupTek/VideoMode", false);
+    m_cam.SetOption(TOUPCAM_OPTION_TRIGGER, m_videoMode ? 0 : 1);
+    Debug.Write(wxString::Format("TOUPTEK: trigger option = %d (%s)\n",
+                                 m_videoMode ? 0 : 1, m_videoMode ? "video" : "software trigger"));
     m_cam.SetOption(TOUPCAM_OPTION_AUTOEXP_POLICY, 0); // 0="Exposure Only" 1="Exposure Preferred"
     m_cam.SetOption(TOUPCAM_OPTION_ROTATE, 0);
     m_cam.SetOption(TOUPCAM_OPTION_UPSIDE_DOWN, 0);
@@ -595,7 +605,7 @@ bool CameraToupTek::Capture(usImage& img, const CaptureParams& captureParams)
     m_cam.StartCapture();
 
     // Debug.Write("TOUPTEK: capture: trigger\n");
-    if (FAILED(hr = Toupcam_Trigger(m_cam.m_h, 1)))
+    if (!m_videoMode && FAILED(hr = Toupcam_Trigger(m_cam.m_h, 1)))
         Debug.Write(wxString::Format("TOUPTEK: Toupcam_Trigger(1) failed with status 0x%x\n", hr));
 
     // "The timeout is recommended for not less than (Exposure Time * 102% + 8 Seconds)."
