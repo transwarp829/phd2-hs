@@ -487,6 +487,15 @@ bool CameraToupTek::Connect(const wxString& camIdArg)
     m_cam.SetOption(TOUPCAM_OPTION_TRIGGER, m_videoMode ? 0 : 1);
     Debug.Write(wxString::Format("TOUPTEK: trigger option = %d (%s)\n",
                                  m_videoMode ? 0 : 1, m_videoMode ? "video" : "software trigger"));
+    // the range is mode dependent on some bodies, so log it next to the mode
+    {
+        unsigned expMin = 0, expMax = 0, expDef = 0;
+        if (SUCCEEDED(Toupcam_get_ExpTimeRange(m_cam.m_h, &expMin, &expMax, &expDef)))
+            Debug.Write(wxString::Format("TOUPTEK: exposure range %u .. %u us (default %u), mode=%s\n",
+                                         expMin, expMax, expDef, m_videoMode ? "video" : "trigger"));
+        else
+            Debug.Write("TOUPTEK: Toupcam_get_ExpTimeRange failed\n");
+    }
     m_cam.SetOption(TOUPCAM_OPTION_AUTOEXP_POLICY, 0); // 0="Exposure Only" 1="Exposure Preferred"
     m_cam.SetOption(TOUPCAM_OPTION_ROTATE, 0);
     m_cam.SetOption(TOUPCAM_OPTION_UPSIDE_DOWN, 0);

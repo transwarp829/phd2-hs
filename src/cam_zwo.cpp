@@ -140,6 +140,7 @@ struct ZWOCameraDlg : public wxDialog
     wxRadioButton *m_bpp16;
     wxSpinCtrl *m_bandwidth;
     wxCheckBox *m_videoMode;
+    wxCheckBox *m_highSpeed;
     ZWOCameraDlg();
 };
 
@@ -167,6 +168,9 @@ ZWOCameraDlg::ZWOCameraDlg() : wxDialog(wxGetApp().GetTopWindow(), wxID_ANY, _("
     m_videoMode = new wxCheckBox(this, wxID_ANY, _("Video mode"));
     m_videoMode->SetToolTip(_("Use the SDK's free-running video capture instead of one snapshot per frame. Faster at short exposures, but the camera then integrates while a guide pulse is in progress. Off is the upstream behaviour."));
     sbSizerBw->Add(m_videoMode, 0, wxALL, 5);
+    m_highSpeed = new wxCheckBox(this, wxID_ANY, _("High speed mode"));
+    m_highSpeed->SetToolTip(_("ASI_HIGH_SPEED_MODE: faster readout, usually at a lower ADC depth. PHD2 works in 8-bit, so this is normally a free speed-up; ignore it if the camera reports the control as read-only."));
+    sbSizerBw->Add(m_highSpeed, 0, wxALL, 5);
     bSizer12->Add(sbSizerBw, 1, wxEXPAND, 5);
 
     wxStdDialogButtonSizer *sdbSizer2 = new wxStdDialogButtonSizer();
@@ -194,12 +198,14 @@ void Camera_ZWO::ShowPropertyDialog()
         dlg.m_bpp16->SetValue(true);
     dlg.m_bandwidth->SetValue(pConfig->Profile.GetInt("/camera/ZWO/BandWidth", 40));
     dlg.m_videoMode->SetValue(pConfig->Profile.GetBoolean("/camera/ZWO/VideoMode", false));
+    dlg.m_highSpeed->SetValue(pConfig->Profile.GetBoolean("/camera/ZWO/HighSpeedMode", true));
     if (dlg.ShowModal() == wxID_OK)
     {
         m_bpp = dlg.m_bpp8->GetValue() ? 8 : 16;
         pConfig->Profile.SetInt("/camera/ZWO/bpp", m_bpp);
         pConfig->Profile.SetInt("/camera/ZWO/BandWidth", dlg.m_bandwidth->GetValue());
         pConfig->Profile.SetBoolean("/camera/ZWO/VideoMode", dlg.m_videoMode->GetValue());
+        pConfig->Profile.SetBoolean("/camera/ZWO/HighSpeedMode", dlg.m_highSpeed->GetValue());
     }
 }
 
@@ -552,6 +558,17 @@ bool Camera_ZWO::Connect(const wxString& camId)
                 Debug.Write(wxString::Format("ZWO: bandwidth = %ld (range %ld .. %ld)\n", bw, caps.MinValue,
                                              caps.MaxValue));
                 ASISetControlValue(m_cameraId, ASI_BANDWIDTHOVERLOAD, bw, ASI_FALSE);
+                break;
+            }
+            case ASI_HIGH_SPEED_MODE:
+            {
+                // 0 = normal, 1 = high speed readout (usually a lower ADC depth).
+                // Guiding output is 8-bit, so the faster readout is normally free.
+                bool const wantFast = pConfig->Profile.GetBoolean("/camera/ZWO/HighSpeedMode", true);
+                Debug.Write(wxString::Format("ZWO: high speed mode = %ld -> %d (writable %d)\n",
+                                             caps.DefaultValue, wantFast ? 1 : 0, caps.IsWritable));
+                if (caps.IsWritable)
+                    ASISetControlValue(m_cameraId, ASI_HIGH_SPEED_MODE, wantFast ? 1 : 0, ASI_FALSE);
                 break;
             }
             case ASI_HARDWARE_BIN:
