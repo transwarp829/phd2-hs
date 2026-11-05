@@ -54,10 +54,24 @@
 - `usImage::CalcStats` 用已有直方图取 `FiltMin/FiltMax`，去掉整帧 `Median3` 和第二趟扫描；
   `MinADU/MaxADU/MedianADU` 不变（8.3 MP 下 90 → 10 ms）（`c0a5454`）
 - 模拟器传感器尺寸可配置：`/SimCam/width`、`/SimCam/height`（默认 752x580）（`4a1129e`）
-- ToupTek 可选自由运行视频模式：`/camera/ToupTek/VideoMode`（默认 **0** = 上游的每帧软件触发）。
-  驱动一直设的是 `TOUPCAM_OPTION_TRIGGER=1`，而 SDK 默认是 0（视频模式）。
-  实测 AE676M 3536x3536、10 ms 曝光：**触发 296 ms/帧（3.4 fps）→ 视频 98 ms/帧（10.2 fps）**，
-  每帧固定开销从 ~269 ms 降到 ~72 ms（`fcba816`）
+- ToupTek 三个被钉死的传输参数改为可配置，默认值全部等于上游行为：
+  - `/camera/ToupTek/VideoMode`（默认 0 = 每帧软件触发）。驱动一直设 `TOUPCAM_OPTION_TRIGGER=1`，
+    而 SDK 默认是 0（自由运行视频）（`fcba816`）
+  - `/camera/ToupTek/Speed`（默认 0 = 最低档）。连接时无条件 `Toupcam_put_Speed(0)`，
+    读到非 0 还会再压回 0（`b4c82ed`）
+  - `/camera/ToupTek/RealTime`（默认 1 = 上游的 `Toupcam_put_RealTime(1)`）。这个标志在
+    AE676M 上是**限流**的（`11afda0`）
+
+  实测 AE676M 3536x3536、8-bit、10 ms 曝光：
+
+  | 配置 | 周期 | fps | 曝光+读出 |
+  |---|---|---|---|
+  | 触发 + speed 0 + RealTime 1（上游原状） | 296 ms | 3.4 | 279 ms |
+  | 视频 + speed 0 + RealTime 1 | 98 ms | 10.2 | 82 ms |
+  | 视频 + speed 2 + RealTime 1 | 65 ms | 15.4 | 48 ms |
+  | 视频 + speed 2 + RealTime 0 | **34 ms** | **29.4** | 19 ms |
+
+  注意 `RealTime=0` 是让 SDK 排队而不是限速，消费者跟不上时会拿到旧帧，所以默认不开启。
 
 ## 实测
 
