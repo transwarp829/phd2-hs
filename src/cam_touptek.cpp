@@ -135,15 +135,69 @@ struct ToupCam
     bool _PullImage(void *buf, wxSize *sz)
     {
         HRESULT hr;
-        unsigned int width, height;
-        if (SUCCEEDED(hr = Toupcam_PullImage(m_h, buf, 0, &width, &height)))
+        ToupcamFrameInfoV3 info;
+        memset(&info, 0, sizeof(info));
+
+        // PullImageV3 rather than PullImage so the frame's sequence number and
+        // timestamp are available: that is the only way to tell whether the frame
+        // just returned is the newest one or an old queue entry.
+        if (SUCCEEDED(hr = Toupcam_PullImageV3(m_h, buf, 0, 0, 0, &info)))
         {
-            sz->x = width;
-            sz->y = height;
+            sz->x = info.width;
+            sz->y = info.height;
+            log_frame_timing(info);
             return true;
         }
-        Debug.Write(wxString::Format("TOUPTEK: PullImage failed with status 0x%x\n", hr));
+        // E_PENDING means "no frame ready yet"; the caller already waited for the
+        // image event, so retry briefly instead of treating it as a failure.
+        for (int i = 0; i < 50 && hr == 0x8000000A; ++i)
+        {
+            wxMilliSleep(2);
+            memset(&info, 0, sizeof(info));
+            hr = Toupcam_PullImageV3(m_h, buf, 0, 0, 0, &info);
+            if (SUCCEEDED(hr))
+            {
+                sz->x = info.width;
+                sz->y = info.height;
+                log_frame_timing(info);
+                return true;
+            }
+        }
+        Debug.Write(wxString::Format("TOUPTEK: PullImageV3 failed with status 0x%x\n", hr));
         return false;
+    }
+
+    // Frame-age probe. The SDK timestamp is in microseconds with an unspecified
+    // epoch, so only its *delta* is used: if it advances slower than the wall
+    // clock, the frames we pull are from further back in the queue.
+    void log_frame_timing(const ToupcamFrameInfoV3& info)
+    {
+        static int enabled = -1;
+        if (enabled < 0)
+            enabled = pConfig->Profile.GetBoolean("/camera/ToupTek/FrameTiming", false) ? 1 : 0;
+        if (!enabled)
+            return;
+
+        static LARGE_INTEGER freq = {0};
+        if (freq.QuadPart == 0)
+            QueryPerformanceFrequency(&freq);
+        LARGE_INTEGER now;
+        QueryPerformanceCounter(&now);
+        double const wallUs = 1e6 * (double) now.QuadPart / (double) freq.QuadPart;
+
+        static double prevWall = 0;
+        static unsigned prevSeq = 0;
+        static unsigned long long prevTs = 0;
+        static int n = 0;
+
+        if (prevWall > 0 && (n++ % 10) == 0)
+            Debug.Write(wxString::Format("TOUPTEK frame: seq=%u (+%u) tsDelta=%.1f ms wallDelta=%.1f ms\n",
+                                         info.seq, info.seq - prevSeq,
+                                         prevTs ? (info.timestamp - prevTs) / 1000.0 : 0.0,
+                                         (wallUs - prevWall) / 1000.0));
+        prevWall = wallUs;
+        prevSeq = info.seq;
+        prevTs = info.timestamp;
     }
 
     bool PullImage(void *buf, wxSize *sz)
@@ -458,7 +512,9 @@ bool CameraToupTek::Connect(const wxString& camIdArg)
 
     // RealTime tells the SDK to deliver frames as they arrive rather than pacing
     // them; some bodies throttle the stream in this mode, so allow turning it off.
-    int realtime = pConfig->Profile.GetInt("/camera/ToupTek/RealTime", 0);
+    // 2 measured the same frame rate as 0 (34 ms) while still guaranteeing a fresh
+    // frame when the consumer falls behind; 1 drops every other frame (65 ms).
+    int realtime = pConfig->Profile.GetInt("/camera/ToupTek/RealTime", 2);
     realtime = wxMax(0, wxMin(realtime, 2));
     if (FAILED(Toupcam_put_RealTime(m_cam.m_h, realtime)))
         Debug.Write(wxString::Format("TOUPTEK: Toupcam_put_RealTime(%d) failed with status 0x%x\n", realtime, hr));
@@ -867,9 +923,7 @@ ToupTekCameraDlg::ToupTekCameraDlg() : wxDialog(wxGetApp().GetTopWindow(), wxID_
     m_realTimeChoice->Append(_("0 - Off: stop grabbing when the queue is full"));
     m_realTimeChoice->Append(_("1 - Both: drop all pending frames"));
     m_realTimeChoice->Append(_("2 - Soft: drop pending, keep DDR"));
-    m_realTimeChoice->SetToolTip(_("Toupcam_put_RealTime. This is the stale-frame policy, not a rate\r\n"
-                                   "limit: 0 keeps everything (and stalls when full), 1 keeps only the\r\n"
-                                   "newest frame."));
+    m_realTimeChoice->SetToolTip(_("Toupcam_put_RealTime: the stale-frame policy, not a rate limit. 0 keeps everything and stalls when the queue is full; 1 drops pending frames, which on this body also costs every other frame (65 ms instead of 34); 2 drops pending frames without touching the DDR buffer and keeps the full rate."));
     rtRow->Add(m_realTimeChoice, 0, wxALL, 5);
     sbSizerFast->Add(rtRow, 0, wxEXPAND, 0);
 
@@ -906,7 +960,7 @@ void CameraToupTek::ShowPropertyDialog()
     if (speedValue < 0 || speedValue > maxSpeed)
         speedValue = maxSpeed;
     dlg.m_speedChoice->SetSelection(speedValue);
-    int rt = pConfig->Profile.GetInt("/camera/ToupTek/RealTime", 0);
+    int rt = pConfig->Profile.GetInt("/camera/ToupTek/RealTime", 2);
     dlg.m_realTimeChoice->SetSelection(rt < 0 || rt > 2 ? 0 : rt);
     if (dlg.ShowModal() == wxID_OK)
     {
