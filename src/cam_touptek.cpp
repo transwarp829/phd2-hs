@@ -452,8 +452,13 @@ bool CameraToupTek::Connect(const wxString& camIdArg)
     if (FAILED(hr = Toupcam_put_Speed(m_cam.m_h, (unsigned short) m_speed)))
         Debug.Write(wxString::Format("TOUPTEK: Toupcam_put_Speed(%d) failed with status 0x%x\n", m_speed, hr));
 
-    if (FAILED(Toupcam_put_RealTime(m_cam.m_h, 1)))
-        Debug.Write(wxString::Format("TOUPTEK: Toupcam_put_RealTime(1) failed with status 0x%x\n", hr));
+    // RealTime tells the SDK to deliver frames as they arrive rather than pacing
+    // them; some bodies throttle the stream in this mode, so allow turning it off.
+    int realtime = pConfig->Profile.GetInt("/camera/ToupTek/RealTime", 1) ? 1 : 0;
+    if (FAILED(Toupcam_put_RealTime(m_cam.m_h, realtime)))
+        Debug.Write(wxString::Format("TOUPTEK: Toupcam_put_RealTime(%d) failed with status 0x%x\n", realtime, hr));
+    else
+        Debug.Write(wxString::Format("TOUPTEK: realtime = %d\n", realtime));
 
     m_cam.SetRoi(wxRect()); // reset ROI
 
