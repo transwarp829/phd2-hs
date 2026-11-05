@@ -272,8 +272,8 @@ public:
 
 CameraToupTek::CameraToupTek()
 {
-    m_videoMode = false;
-    m_speed = 0;
+    m_videoMode = true;
+    m_speed = -1;
     Debug.Write(wxString::Format("TOUPTEK: ToupCam SDK version %s\n", Toupcam_Version()));
 
     Name = _T("ToupTek Camera");
@@ -442,9 +442,10 @@ bool CameraToupTek::Connect(const wxString& camIdArg)
     // The connect path has always pinned the USB transfer speed to 0, the slow
     // end of the range. At full resolution the speed cap, not the sensor, can be
     // what limits the frame rate, so allow overriding it.
-    m_speed = pConfig->Profile.GetInt("/camera/ToupTek/Speed", 0);
+    // -1 means the camera's own maximum; the connect path used to pin this to 0
+    m_speed = pConfig->Profile.GetInt("/camera/ToupTek/Speed", -1);
     if (m_speed < 0)
-        m_speed = 0;
+        m_speed = info->model ? (int) info->model->maxspeed : 0;
     if (info->model && m_speed > (int) info->model->maxspeed)
         m_speed = (int) info->model->maxspeed;
     Debug.Write(wxString::Format("TOUPTEK: speed option = %d (max %u)\n", m_speed,
@@ -454,7 +455,7 @@ bool CameraToupTek::Connect(const wxString& camIdArg)
 
     // RealTime tells the SDK to deliver frames as they arrive rather than pacing
     // them; some bodies throttle the stream in this mode, so allow turning it off.
-    int realtime = pConfig->Profile.GetInt("/camera/ToupTek/RealTime", 1) ? 1 : 0;
+    int realtime = pConfig->Profile.GetInt("/camera/ToupTek/RealTime", 0) ? 1 : 0;
     if (FAILED(Toupcam_put_RealTime(m_cam.m_h, realtime)))
         Debug.Write(wxString::Format("TOUPTEK: Toupcam_put_RealTime(%d) failed with status 0x%x\n", realtime, hr));
     else
@@ -478,7 +479,7 @@ bool CameraToupTek::Connect(const wxString& camIdArg)
     // Free-running video mode is the SDK default but carries the stale-frame
     // risk that matters at long exposures, so keep the trigger default and
     // let the profile opt in.
-    m_videoMode = pConfig->Profile.GetBoolean("/camera/ToupTek/VideoMode", false);
+    m_videoMode = pConfig->Profile.GetBoolean("/camera/ToupTek/VideoMode", true);
     m_cam.SetOption(TOUPCAM_OPTION_TRIGGER, m_videoMode ? 0 : 1);
     Debug.Write(wxString::Format("TOUPTEK: trigger option = %d (%s)\n",
                                  m_videoMode ? 0 : 1, m_videoMode ? "video" : "software trigger"));
