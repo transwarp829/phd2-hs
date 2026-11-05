@@ -356,6 +356,36 @@ void ProfileWindow::OnPaint(wxPaintEvent& WXUNUSED(evt))
             // red cross = current centroid; its distance from the green cross is
             // exactly the guide error
             double starX = toScreenX(curX), starY = toScreenY(curY);
+
+            // probe: where the star actually is in the magnified crop, so the
+            // placement of the cross can be checked instead of eyeballed
+            static int s_timing = -1;
+            if (s_timing < 0)
+                s_timing = pConfig->Profile.GetBoolean("/Display/PaintTiming", false) ? 1 : 0;
+            if (s_timing)
+            {
+                wxImage zi = zoomedDBmp.ConvertToImage();
+                const unsigned char *zp = zi.GetData();
+                double cx = 0, cy = 0, cw = 0;
+                for (int yy = 0; yy < width; ++yy)
+                    for (int xx = 0; xx < width; ++xx)
+                    {
+                        double v = zp[(yy * width + xx) * 3];
+                        v = v * v; // square: the star has to dominate the noise floor
+                        cx += v * xx;
+                        cy += v * yy;
+                        cw += v;
+                    }
+                Debug.Write(wxString::Format(
+                    "StarProfile: zoom=%.2f sz=%d width=%d mid=%d  cross=(%.1f,%.1f)  star=(%.1f,%.1f)  "
+                    "delta=(%.1f,%.1f) px = (%.2f,%.2f) display px\n",
+                    zoom, sz, width, midwidth, starX - imageLeftMargin, starY - imgTop,
+                    cw > 0 ? cx / cw : -1, cw > 0 ? cy / cw : -1,
+                    cw > 0 ? cx / cw - (starX - imageLeftMargin) : 0, cw > 0 ? cy / cw - (starY - imgTop) : 0,
+                    cw > 0 ? (cx / cw - (starX - imageLeftMargin)) / zoom : 0,
+                    cw > 0 ? (cy / cw - (starY - imgTop)) / zoom : 0));
+            }
+
             if (starX >= imageLeftMargin)
             {
                 dc.SetPen(RedPen);
