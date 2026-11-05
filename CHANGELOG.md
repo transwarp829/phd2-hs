@@ -48,28 +48,22 @@
 
 ## 相机
 
-- ZWO 相机属性对话框新增 **USB bandwidth**（40..100，默认 40 = 上游行为），
-  对应 `ASI_BANDWIDTHOVERLOAD`；上游把它钉在最小值且没有控件，而 QHY 的同类旋钮
-  （`USB Traffic`）一直是可见的（`4c002b7`）
+- ZWO 相机属性对话框新增 **USB bandwidth**（40..100，默认 40 = 上游行为）和 **Video mode**
+  勾选框（默认关 = 上游的 snap 模式）。带宽对应 `ASI_BANDWIDTHOVERLOAD`，上游把它钉在最小值
+  且没有控件，而 QHY 的同类旋钮（`USB Traffic`）一直是可见的（`4c002b7`、`2d61ec9`）
 - ZWO 可选视频模式与带宽覆盖：`/camera/ZWO/VideoMode`（默认 **0** = snap）、
   `/camera/ZWO/BandWidth`（默认 **40** = 上游行为）。视频模式在短曝光下快一个量级，
   但长曝光会把脉冲压进曝光窗口，所以不默认开启（`c0a5454`）
 - `usImage::CalcStats` 用已有直方图取 `FiltMin/FiltMax`，去掉整帧 `Median3` 和第二趟扫描；
   `MinADU/MaxADU/MedianADU` 不变（8.3 MP 下 90 → 10 ms）（`c0a5454`）
 - 模拟器传感器尺寸可配置：`/SimCam/width`、`/SimCam/height`（默认 752x580）（`4a1129e`）
-- ToupTek **默认走最快路径**，并把这个选择放进相机属性对话框的一个勾选框
-  （`Fast transfer`，默认勾选，绑定 `/camera/ToupTek/FastTransfer`，需重连生效）。
-  取消勾选即完全回到上游行为（已实测：trigger 1、speed 0、RealTime 1）。
-  底层三个键仍可单独覆盖：
-  - `/camera/ToupTek/VideoMode`（默认 0 = 每帧软件触发）。驱动一直设 `TOUPCAM_OPTION_TRIGGER=1`，
-    而 SDK 默认是 0（自由运行视频）（`fcba816`）
-  - `/camera/ToupTek/Speed`（默认 0 = 最低档）。连接时无条件 `Toupcam_put_Speed(0)`，
-    读到非 0 还会再压回 0（`b4c82ed`）
-  - `/camera/ToupTek/RealTime`（默认 1 = 上游的 `Toupcam_put_RealTime(1)`）。这个标志在
-    AE676M 上是**限流**的（`11afda0`）
-  - 对话框里另有 **USB speed** 选择（Auto / 0..3）：Auto 表示"Fast transfer 勾选时取最大档、
-    否则取 0"，显式选值则优先生效，所以"关视频模式但仍要最高速率"也能表达（`4c002b7`）
-
+- ToupTek **默认走最快路径**，三个参数各自独立暴露在相机属性对话框里（都需重连生效）：
+  - **Video mode**（勾选，默认开）：`TOUPCAM_OPTION_TRIGGER` 0/1。开着是自由运行、拿最新帧，
+    但长曝光会和导星脉冲重叠；关掉即上游行为（每帧一次软件触发）（`fcba816`、`2d61ec9`）
+  - **USB speed**（下拉，列表按上次连接时相机上报的最大值填充，AE676M 是 0..2）：
+    `Toupcam_put_Speed`。上游无条件钉在 0（`b4c82ed`、`2d61ec9`）
+  - **RealTime**（下拉 0/1/2，默认 0）：这是**陈旧帧策略**，不是限速。0 = 队列满了就停抓，
+    1 = 丢弃所有排队帧、只留最新的，2 = 同样丢弃但不动 DDR 缓冲（`11afda0`、`2d61ec9`）
   实测 AE676M 3536x3536、8-bit、10 ms 曝光（`ft` = FastTransfer 勾选）：
 
   | 配置 | 周期 | fps | 曝光+读出 |
