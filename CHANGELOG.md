@@ -48,6 +48,9 @@
 
 ## 相机
 
+- ZWO 相机属性对话框新增 **USB bandwidth**（40..100，默认 40 = 上游行为），
+  对应 `ASI_BANDWIDTHOVERLOAD`；上游把它钉在最小值且没有控件，而 QHY 的同类旋钮
+  （`USB Traffic`）一直是可见的（`4c002b7`）
 - ZWO 可选视频模式与带宽覆盖：`/camera/ZWO/VideoMode`（默认 **0** = snap）、
   `/camera/ZWO/BandWidth`（默认 **40** = 上游行为）。视频模式在短曝光下快一个量级，
   但长曝光会把脉冲压进曝光窗口，所以不默认开启（`c0a5454`）
@@ -64,6 +67,8 @@
     读到非 0 还会再压回 0（`b4c82ed`）
   - `/camera/ToupTek/RealTime`（默认 1 = 上游的 `Toupcam_put_RealTime(1)`）。这个标志在
     AE676M 上是**限流**的（`11afda0`）
+  - 对话框里另有 **USB speed** 选择（Auto / 0..3）：Auto 表示"Fast transfer 勾选时取最大档、
+    否则取 0"，显式选值则优先生效，所以"关视频模式但仍要最高速率"也能表达（`4c002b7`）
 
   实测 AE676M 3536x3536、8-bit、10 ms 曝光（`ft` = FastTransfer 勾选）：
 
