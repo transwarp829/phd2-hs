@@ -377,13 +377,13 @@ void ProfileWindow::OnPaint(wxPaintEvent& WXUNUSED(evt))
                         cw += v;
                     }
                 Debug.Write(wxString::Format(
-                    "StarProfile: zoom=%.2f sz=%d width=%d mid=%d  cross=(%.1f,%.1f)  star=(%.1f,%.1f)  "
-                    "delta=(%.1f,%.1f) px = (%.2f,%.2f) display px\n",
-                    zoom, sz, width, midwidth, starX - imageLeftMargin, starY - imgTop,
+                    "StarProfile: zoom=%.2f sz=%d width=%d mid=%d  shownFrame=%u curFrame=%u  "
+                    "cross=(%.1f,%.1f) star=(%.1f,%.1f) delta=(%.1f,%.1f) px\n",
+                    zoom, sz, width, midwidth, pFrame->pGuider->DisplayedFrameNum(),
+                    pFrame->pGuider->CurrentImage() ? pFrame->pGuider->CurrentImage()->FrameNum : 0,
+                    starX - imageLeftMargin, starY - imgTop,
                     cw > 0 ? cx / cw : -1, cw > 0 ? cy / cw : -1,
-                    cw > 0 ? cx / cw - (starX - imageLeftMargin) : 0, cw > 0 ? cy / cw - (starY - imgTop) : 0,
-                    cw > 0 ? (cx / cw - (starX - imageLeftMargin)) / zoom : 0,
-                    cw > 0 ? (cy / cw - (starY - imgTop)) / zoom : 0));
+                    cw > 0 ? cx / cw - (starX - imageLeftMargin) : 0, cw > 0 ? cy / cw - (starY - imgTop) : 0));
             }
 
             if (starX >= imageLeftMargin)

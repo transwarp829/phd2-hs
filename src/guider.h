@@ -137,6 +137,7 @@ struct GuiderOffset
 class Guider : public wxWindow
 {
     wxImage *m_displayedImage;
+    unsigned int m_displayedFrameNum; // frame the displayed image was rendered from
     bool m_fusedRender;
     OVERLAY_MODE m_overlayMode;
     OverlaySlitCoords m_overlaySlitCoords;
@@ -323,6 +324,7 @@ public:
     double FrameIntervalMs() const;
     double FrameRate() const;
     wxImage *DisplayedImage() const;
+    unsigned int DisplayedFrameNum() const;
     double ScaleFactor() const;
 
     virtual wxString GetSettingsSummary() const;
@@ -418,6 +420,11 @@ inline double Guider::FrameRate() const
 inline wxImage *Guider::DisplayedImage() const
 {
     return m_displayedImage;
+}
+
+inline unsigned int Guider::DisplayedFrameNum() const
+{
+    return m_displayedFrameNum;
 }
 
 inline double Guider::ScaleFactor() const

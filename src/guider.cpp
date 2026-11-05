@@ -171,6 +171,7 @@ Guider::Guider(wxWindow *parent, int xSize, int ySize)
     m_lastFrameTimeUs = 0;
     m_showBookmarks = true;
     m_displayedImage = new wxImage(XWinSize, YWinSize, true);
+    m_displayedFrameNum = 0;
     m_paused = PAUSE_NONE;
     m_starFoundTimestamp = 0;
     m_avgDistanceNeedReset = false;
@@ -573,6 +574,7 @@ bool Guider::PaintHelper(wxDC& dc, wxMemoryDC& memDC)
 
             XImgSize = dstW;
             YImgSize = dstH;
+            m_displayedFrameNum = m_pCurrentImage->FrameNum;
 
             if (m_fusedRender && dstW > 0 && dstH > 0 && dstW <= srcW && dstH <= srcH)
             {
