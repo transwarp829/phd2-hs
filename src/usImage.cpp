@@ -267,6 +267,11 @@ static unsigned char *buildGammaLookupTable(int blevel, int wlevel, double power
     return result;
 }
 
+unsigned char *usImage::BuildGammaLut(int blevel, int wlevel, double power)
+{
+    return buildGammaLookupTable(blevel, wlevel, power);
+}
+
 bool usImage::CopyToImage(wxImage **rawimg, int blevel, int wlevel, double power)
 {
     wxImage *img = *rawimg;

@@ -72,6 +72,8 @@ public:
     void InitImgStartTime();
     bool CopyFrom(const usImage& src);
     bool CopyToImage(wxImage **img, int blevel, int wlevel, double power);
+    // 16-bit -> 8-bit display mapping; caller owns the returned buffer
+    static unsigned char *BuildGammaLut(int blevel, int wlevel, double power);
     bool CopyFromImage(const wxImage& img);
     bool Load(const wxString& fname);
     bool Save(const wxString& fname, const wxString& hdrComment = wxEmptyString) const;

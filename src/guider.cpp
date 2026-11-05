@@ -168,6 +168,7 @@ Guider::Guider(wxWindow *parent, int xSize, int ySize)
     m_scaleFactor = 1.0;
     m_lastDisplayRefreshUs = 0;
     m_displayMaxFps = 0;
+    m_fusedRender = false;
     m_frameIntervalMs = 0.0;
     m_lastFrameTimeUs = 0;
     m_showBookmarks = true;
@@ -228,6 +229,7 @@ void Guider::LoadProfileSettings()
 
     // cache: this is read on every guide frame
     m_displayMaxFps = pConfig->Profile.GetInt("/Display/MaxFps", 0);
+    m_fusedRender = pConfig->Profile.GetBoolean("/Display/FusedRender", false);
 
     double minHFD = pConfig->Profile.GetDouble("/guider/StarMinHFD", GetMinStarHFDDefault());
     // Handle upgrades from earlier releases that allowed zero MinHFD values.  Values below floor
@@ -448,12 +450,75 @@ void Guider::OnClose(wxCloseEvent& evt)
     Destroy();
 }
 
+// Box-downsample the raw frame straight into an RGB image, applying the display
+// lookup table in the same pass. Only used when the image is being shrunk: the
+// upscale path keeps the wxImage rescale so small images stay smooth.
+static void render_downscaled(const usImage& img, wxImage *out, int dstW, int dstH, const unsigned char *lut)
+{
+    const int srcW = img.Size.x;
+    const int srcH = img.Size.y;
+    const int outW = out->GetWidth();
+    unsigned char *const dstBase = out->GetData();
+    const unsigned short *const src = img.ImageData;
+
+    // precompute the source spans: a division per output pixel would cost more
+    // than the whole copy
+    std::vector<int> xa(dstW), xb(dstW), ya(dstH), yb(dstH);
+    for (int x = 0; x < dstW; ++x)
+    {
+        xa[x] = (int) ((long long) x * srcW / dstW);
+        int e = (int) ((long long) (x + 1) * srcW / dstW);
+        xb[x] = e > xa[x] ? e : xa[x] + 1;
+    }
+    for (int y = 0; y < dstH; ++y)
+    {
+        ya[y] = (int) ((long long) y * srcH / dstH);
+        int e = (int) ((long long) (y + 1) * srcH / dstH);
+        yb[y] = e > ya[y] ? e : ya[y] + 1;
+    }
+
+    for (int y = 0; y < dstH; ++y)
+    {
+        unsigned char *dst = dstBase + (size_t) y * outW * 3;
+        for (int x = 0; x < dstW; ++x)
+        {
+            unsigned int sum = 0;
+            int n = 0;
+            for (int yy = ya[y]; yy < yb[y]; ++yy)
+            {
+                const unsigned short *row = src + (size_t) yy * srcW;
+                for (int xx = xa[x]; xx < xb[x]; ++xx)
+                {
+                    sum += row[xx];
+                    ++n;
+                }
+            }
+
+            unsigned int v;
+            switch (n)
+            {
+            case 1: v = sum; break;
+            case 2: v = sum >> 1; break;
+            case 4: v = sum >> 2; break;
+            default: v = sum / (unsigned) n; break;
+            }
+
+            const unsigned char d = lut[v];
+            *dst++ = d;
+            *dst++ = d;
+            *dst++ = d;
+        }
+    }
+}
+
 bool Guider::PaintHelper(wxAutoBufferedPaintDCBase& dc, wxMemoryDC& memDC)
 {
     bool bError = false;
 
     wxLongLong pt0 = wxGetUTCTimeUSec();
     wxLongLong pt1 = pt0, pt2 = pt0, pt3 = pt0, pt4 = pt0;
+
+    int XImgSize = 0, YImgSize = 0;
 
     try
     {
@@ -467,69 +532,89 @@ bool Guider::PaintHelper(wxAutoBufferedPaintDCBase& dc, wxMemoryDC& memDC)
             if (!m_pCurrentImage->StatsValid)
                 m_pCurrentImage->CalcStats();
 
-            int blevel = m_pCurrentImage->FiltMin;
-            int wlevel = m_pCurrentImage->FiltMax;
-            m_pCurrentImage->CopyToImage(&m_displayedImage, blevel, wlevel, pFrame->Stretch_gamma);
-        }
+            const int srcW = m_pCurrentImage->Size.x;
+            const int srcH = m_pCurrentImage->Size.y;
 
-        pt1 = wxGetUTCTimeUSec();
+            // size the image is drawn at (the rules are unchanged)
+            int dstW = srcW;
+            int dstH = srcH;
+            m_scaleFactor = 1.0;
 
-        int imageWidth = m_displayedImage->GetWidth();
-        int imageHeight = m_displayedImage->GetHeight();
-
-        // scale the image if necessary
-
-        if (imageWidth != XWinSize || imageHeight != YWinSize)
-        {
-            // The image is not the exact right size -- figure out what to do.
-            double xScaleFactor = imageWidth / (double) XWinSize;
-            double yScaleFactor = imageHeight / (double) YWinSize;
-            int newWidth = imageWidth;
-            int newHeight = imageHeight;
-
-            double newScaleFactor = (xScaleFactor > yScaleFactor) ? xScaleFactor : yScaleFactor;
-
-            //            Debug.Write(wxString::Format("xScaleFactor=%.2f, yScaleFactor=%.2f, newScaleFactor=%.2f\n",
-            //            xScaleFactor,
-            //                    yScaleFactor, newScaleFactor));
-
-            // we rescale the image if:
-            // - The image is either too big
-            // - The image is so small that at least one dimension is less
-            //   than half the width of the window or
-            // - The user has requested rescaling
-
-            if (xScaleFactor > 1.0 || yScaleFactor > 1.0 || xScaleFactor < 0.45 || yScaleFactor < 0.45 || m_scaleImage)
+            if (srcW != XWinSize || srcH != YWinSize)
             {
+                double xScaleFactor = srcW / (double) XWinSize;
+                double yScaleFactor = srcH / (double) YWinSize;
+                double newScaleFactor = (xScaleFactor > yScaleFactor) ? xScaleFactor : yScaleFactor;
 
-                newWidth /= newScaleFactor;
-                newHeight /= newScaleFactor;
-
-                newScaleFactor = 1.0 / newScaleFactor;
-
-                m_scaleFactor = newScaleFactor;
-
-                if (imageWidth != newWidth || imageHeight != newHeight)
+                // we rescale the image if:
+                // - The image is either too big
+                // - The image is so small that at least one dimension is less
+                //   than half the width of the window or
+                // - The user has requested rescaling
+                if (xScaleFactor > 1.0 || yScaleFactor > 1.0 || xScaleFactor < 0.45 || yScaleFactor < 0.45 || m_scaleImage)
                 {
-                    //                    Debug.Write(wxString::Format("Resizing image to %d,%d\n", newWidth, newHeight));
+                    dstW = srcW / newScaleFactor;
+                    dstH = srcH / newScaleFactor;
+                    m_scaleFactor = 1.0 / newScaleFactor;
+                }
+            }
 
-                    if (newWidth > 0 && newHeight > 0)
-                    {
-                        m_displayedImage->Rescale(newWidth, newHeight, wxIMAGE_QUALITY_BILINEAR);
-                    }
+            XImgSize = dstW;
+            YImgSize = dstH;
+
+            if (m_fusedRender && dstW > 0 && dstH > 0 && dstW <= srcW && dstH <= srcH)
+            {
+                // one pass: box-downsample the raw frame straight into window pixels
+                if (m_displayedImage->GetWidth() != XWinSize || m_displayedImage->GetHeight() != YWinSize ||
+                    m_displayedImage->HasAlpha())
+                {
+                    delete m_displayedImage;
+                    m_displayedImage = new wxImage(XWinSize, YWinSize, false);
+                    memset(m_displayedImage->GetData(), 0, (size_t) XWinSize * YWinSize * 3);
+                }
+
+                unsigned char *lut =
+                    usImage::BuildGammaLut(m_pCurrentImage->FiltMin, m_pCurrentImage->FiltMax, pFrame->Stretch_gamma);
+                render_downscaled(*m_pCurrentImage, m_displayedImage, dstW, dstH, lut);
+                delete[] lut;
+
+                // clear the padding so a resize cannot leave stale pixels behind
+                if (dstW < XWinSize || dstH < YWinSize)
+                {
+                    unsigned char *const base = m_displayedImage->GetData();
+                    for (int y = dstH; y < YWinSize; ++y)
+                        memset(base + (size_t) y * XWinSize * 3, 0, (size_t) XWinSize * 3);
+                    for (int y = 0; y < dstH; ++y)
+                        memset(base + (size_t) y * XWinSize * 3 + (size_t) dstW * 3, 0, (size_t) (XWinSize - dstW) * 3);
                 }
             }
             else
             {
-                m_scaleFactor = 1.0;
+                m_pCurrentImage->CopyToImage(&m_displayedImage, m_pCurrentImage->FiltMin, m_pCurrentImage->FiltMax,
+                                             pFrame->Stretch_gamma);
+
+                if (dstW > 0 && dstH > 0 && (dstW != srcW || dstH != srcH))
+                    m_displayedImage->Rescale(dstW, dstH, wxIMAGE_QUALITY_BILINEAR);
             }
+        }
+
+        pt1 = wxGetUTCTimeUSec();
+
+        if (XImgSize <= 0 || YImgSize <= 0)
+        {
+            XImgSize = m_displayedImage->GetWidth();
+            YImgSize = m_displayedImage->GetHeight();
         }
 
         // important to provide explicit color for r,g,b, optional args to Size().
         // If default args are provided wxWidgets performs some expensive histogram
         // operations.
         pt2 = wxGetUTCTimeUSec();
-        wxBitmap DisplayedBitmap(m_displayedImage->Size(wxSize(XWinSize, YWinSize), wxPoint(0, 0), 0, 0, 0));
+        wxBitmap DisplayedBitmap;
+        if (m_displayedImage->GetWidth() == XWinSize && m_displayedImage->GetHeight() == YWinSize)
+            DisplayedBitmap = wxBitmap(*m_displayedImage);
+        else
+            DisplayedBitmap = wxBitmap(m_displayedImage->Size(wxSize(XWinSize, YWinSize), wxPoint(0, 0), 0, 0, 0));
         pt3 = wxGetUTCTimeUSec();
         memDC.SelectObject(DisplayedBitmap);
 
@@ -543,15 +628,11 @@ bool Guider::PaintHelper(wxAutoBufferedPaintDCBase& dc, wxMemoryDC& memDC)
 
         if (s_paintTiming)
         {
-            Debug.Write(wxString::Format("PaintTiming: copy=%lld rescale=%lld pad+bmp=%lld blit=%lld total=%lld  img=%dx%d win=%dx%d\n",
+            Debug.Write(wxString::Format("PaintTiming: prep=%lld rescale=%lld bmp=%lld blit=%lld total=%lld  img=%dx%d win=%dx%d\n",
                                          (pt1 - pt0).GetValue() / 1000, (pt2 - pt1).GetValue() / 1000,
                                          (pt3 - pt2).GetValue() / 1000, (pt4 - pt3).GetValue() / 1000,
-                                         (pt4 - pt0).GetValue() / 1000, m_displayedImage->GetWidth(),
-                                         m_displayedImage->GetHeight(), XWinSize, YWinSize));
+                                         (pt4 - pt0).GetValue() / 1000, XImgSize, YImgSize, XWinSize, YWinSize));
         }
-
-        int XImgSize = m_displayedImage->GetWidth();
-        int YImgSize = m_displayedImage->GetHeight();
 
         if (m_overlayMode)
         {
