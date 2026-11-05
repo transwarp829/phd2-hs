@@ -1252,9 +1252,9 @@ enum
 // DC, so it is destroyed after it
 struct GraphPaintTimer
 {
-    wxLongLong t0;
+    wxLongLong t0, t1, t2, t3, t4;
     wxWindow *win;
-    GraphPaintTimer(wxWindow *w) : t0(wxGetUTCTimeUSec()), win(w) { }
+    GraphPaintTimer(wxWindow *w) : t0(wxGetUTCTimeUSec()), t1(0), t2(0), t3(0), t4(0), win(w) { }
     ~GraphPaintTimer()
     {
         static int on = -1;
@@ -1262,9 +1262,12 @@ struct GraphPaintTimer
             on = pConfig->Profile.GetBoolean("/Display/PaintTiming", false) ? 1 : 0;
         if (on)
         {
+            wxLongLong now = wxGetUTCTimeUSec();
             wxSize sz = win->GetClientSize();
-            Debug.Write(wxString::Format("GraphPaint: %lld ms %dx%d\n", (wxGetUTCTimeUSec() - t0).GetValue() / 1000,
-                                         sz.x, sz.y));
+            Debug.Write(wxString::Format(
+                "GraphPaint: dc=%lld clear=%lld grid=%lld plot=%lld tail=%lld total=%lld  %dx%d\n",
+                (t1 - t0).GetValue() / 1000, (t2 - t1).GetValue() / 1000, (t3 - t2).GetValue() / 1000,
+                (t4 - t3).GetValue() / 1000, (now - t4).GetValue() / 1000, (now - t0).GetValue() / 1000, sz.x, sz.y));
         }
     }
 };
@@ -1276,6 +1279,7 @@ void GraphLogClientWindow::OnPaint(wxPaintEvent& WXUNUSED(evt))
     // the whole client area is filled by dc.Clear() below, so the extra
     // client-area bitmap of the buffered DC is pure cost here
     wxPaintDC dc(this);
+    gptimer.t1 = wxGetUTCTimeUSec();
 
     wxSize size(GetClientSize());
     wxSize center(size.x / 2, size.y / 2);
@@ -1303,8 +1307,9 @@ void GraphLogClientWindow::OnPaint(wxPaintEvent& WXUNUSED(evt))
 
     dc.SetBackground(*wxBLACK_BRUSH);
     dc.Clear();
+    gptimer.t2 = wxGetUTCTimeUSec();
 
-    wxPen GreyDashPen(wxColour(200, 200, 200), 1, wxPENSTYLE_DOT);
+    wxPen GreyDashPen(wxColour(200, 200, 200), 1, wxPENSTYLE_SHORT_DASH);
 
     // Draw axes
     dc.SetPen(*wxGREY_PEN);
@@ -1372,6 +1377,8 @@ void GraphLogClientWindow::OnPaint(wxPaintEvent& WXUNUSED(evt))
         dc.SetTextForeground(*wxLIGHT_GREY);
         dc.SetFont(SmallFont);
     }
+
+    gptimer.t3 = wxGetUTCTimeUSec();
 
     // Draw data
     if (m_history.size() > 0)
@@ -1597,6 +1604,8 @@ void GraphLogClientWindow::OnPaint(wxPaintEvent& WXUNUSED(evt))
 
         m_pOscIndex->SetLabel(wxString::Format("RA Osc: %4.2f", m_stats.osc_index));
     }
+
+    gptimer.t4 = wxGetUTCTimeUSec();
 }
 
 void GraphLogClientWindow::OnLeftBtnDown(wxMouseEvent& evt)
