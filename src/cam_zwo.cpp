@@ -139,6 +139,7 @@ struct ZWOCameraDlg : public wxDialog
     wxRadioButton *m_bpp8;
     wxRadioButton *m_bpp16;
     wxSpinCtrl *m_bandwidth;
+    wxCheckBox *m_videoMode;
     ZWOCameraDlg();
 };
 
@@ -163,6 +164,9 @@ ZWOCameraDlg::ZWOCameraDlg() : wxDialog(wxGetApp().GetTopWindow(), wxID_ANY, _("
                                  wxSP_ARROW_KEYS, 40, 100, 40);
     m_bandwidth->SetToolTip(_("USB bandwidth overload, 40 .. 100. Higher values give shorter readout on fast links; the lowest value is the most tolerant of marginal cables. Takes effect on the next connection."));
     sbSizerBw->Add(m_bandwidth, 0, wxALL, 5);
+    m_videoMode = new wxCheckBox(this, wxID_ANY, _("Video mode"));
+    m_videoMode->SetToolTip(_("Use the SDK's free-running video capture instead of one snapshot per frame. Faster at short exposures, but the camera then integrates while a guide pulse is in progress. Off is the upstream behaviour."));
+    sbSizerBw->Add(m_videoMode, 0, wxALL, 5);
     bSizer12->Add(sbSizerBw, 1, wxEXPAND, 5);
 
     wxStdDialogButtonSizer *sdbSizer2 = new wxStdDialogButtonSizer();
@@ -189,11 +193,13 @@ void Camera_ZWO::ShowPropertyDialog()
     else
         dlg.m_bpp16->SetValue(true);
     dlg.m_bandwidth->SetValue(pConfig->Profile.GetInt("/camera/ZWO/BandWidth", 40));
+    dlg.m_videoMode->SetValue(pConfig->Profile.GetBoolean("/camera/ZWO/VideoMode", false));
     if (dlg.ShowModal() == wxID_OK)
     {
         m_bpp = dlg.m_bpp8->GetValue() ? 8 : 16;
         pConfig->Profile.SetInt("/camera/ZWO/bpp", m_bpp);
         pConfig->Profile.SetInt("/camera/ZWO/BandWidth", dlg.m_bandwidth->GetValue());
+        pConfig->Profile.SetBoolean("/camera/ZWO/VideoMode", dlg.m_videoMode->GetValue());
     }
 }
 

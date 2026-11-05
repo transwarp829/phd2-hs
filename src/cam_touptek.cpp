@@ -439,20 +439,18 @@ bool CameraToupTek::Connect(const wxString& camIdArg)
         Debug.Write(wxString::Format("TOUPTEK: Toupcam_get_ExpoAGainRange failed with status 0x%x\n", hr));
     }
 
-    // FastTransfer is the single user-facing switch (camera properties dialog);
-    // the individual keys stay available for finer overrides.
-    bool const fastTransfer = pConfig->Profile.GetBoolean("/camera/ToupTek/FastTransfer", true);
-
     // The connect path has always pinned the USB transfer speed to 0, the slow
     // end of the range. At full resolution the speed cap, not the sensor, can be
     // what limits the frame rate, so allow overriding it.
     // -1 means the camera's own maximum; the connect path used to pin this to 0
     int const requestedSpeed = pConfig->Profile.GetInt("/camera/ToupTek/Speed", -1);
-    m_speed = requestedSpeed >= 0 ? requestedSpeed : (fastTransfer ? -1 : 0);
+    m_speed = requestedSpeed >= 0 ? requestedSpeed : -1; // -1 means the camera maximum
     if (m_speed < 0)
         m_speed = info->model ? (int) info->model->maxspeed : 0;
     if (info->model && m_speed > (int) info->model->maxspeed)
         m_speed = (int) info->model->maxspeed;
+    if (info->model)
+        pConfig->Profile.SetInt("/camera/ToupTek/MaxSpeed", (int) info->model->maxspeed);
     Debug.Write(wxString::Format("TOUPTEK: speed option = %d (max %u)\n", m_speed,
                                  info->model ? info->model->maxspeed : 0));
     if (FAILED(hr = Toupcam_put_Speed(m_cam.m_h, (unsigned short) m_speed)))
@@ -460,7 +458,8 @@ bool CameraToupTek::Connect(const wxString& camIdArg)
 
     // RealTime tells the SDK to deliver frames as they arrive rather than pacing
     // them; some bodies throttle the stream in this mode, so allow turning it off.
-    int realtime = pConfig->Profile.GetInt("/camera/ToupTek/RealTime", fastTransfer ? 0 : 1) ? 1 : 0;
+    int realtime = pConfig->Profile.GetInt("/camera/ToupTek/RealTime", 0);
+    realtime = wxMax(0, wxMin(realtime, 2));
     if (FAILED(Toupcam_put_RealTime(m_cam.m_h, realtime)))
         Debug.Write(wxString::Format("TOUPTEK: Toupcam_put_RealTime(%d) failed with status 0x%x\n", realtime, hr));
     else
@@ -484,7 +483,7 @@ bool CameraToupTek::Connect(const wxString& camIdArg)
     // Free-running video mode is the SDK default but carries the stale-frame
     // risk that matters at long exposures, so keep the trigger default and
     // let the profile opt in.
-    m_videoMode = pConfig->Profile.GetBoolean("/camera/ToupTek/VideoMode", fastTransfer);
+    m_videoMode = pConfig->Profile.GetBoolean("/camera/ToupTek/VideoMode", true);
     m_cam.SetOption(TOUPCAM_OPTION_TRIGGER, m_videoMode ? 0 : 1);
     Debug.Write(wxString::Format("TOUPTEK: trigger option = %d (%s)\n",
                                  m_videoMode ? 0 : 1, m_videoMode ? "video" : "software trigger"));
@@ -818,8 +817,9 @@ struct ToupTekCameraDlg : public wxDialog
 {
     wxRadioButton *m_bpp8;
     wxRadioButton *m_bpp16;
-    wxCheckBox *m_fastTransfer;
+    wxCheckBox *m_videoMode;
     wxChoice *m_speedChoice;
+    wxChoice *m_realTimeChoice;
     ToupTekCameraDlg();
 };
 
@@ -836,23 +836,33 @@ ToupTekCameraDlg::ToupTekCameraDlg() : wxDialog(wxGetApp().GetTopWindow(), wxID_
     sbSizer3->Add(m_bpp16, 0, wxALL, 5);
     bSizer12->Add(sbSizer3, 1, wxEXPAND, 5);
 
-    wxStaticBoxSizer *sbSizerFast = new wxStaticBoxSizer(new wxStaticBox(this, wxID_ANY, _("Transfer")), wxHORIZONTAL);
-    m_fastTransfer = new wxCheckBox(this, wxID_ANY, _("Fast transfer"));
-    m_fastTransfer->SetToolTip(_("Free-running video mode at the camera's maximum transfer rate.\r\n"
-                                  "Off restores the upstream behaviour: one software trigger per\r\n"
-                                  "frame, lowest transfer speed, real-time pacing.\r\n"
-                                  "Takes effect on the next connection."));
-    sbSizerFast->Add(m_fastTransfer, 0, wxALL, 5);
+    wxStaticBoxSizer *sbSizerFast = new wxStaticBoxSizer(new wxStaticBox(this, wxID_ANY, _("Transfer")), wxVERTICAL);
 
-    wxArrayString speedChoices;
-    speedChoices.Add(_("Auto"));
-    for (int i = 0; i <= 3; ++i)
-        speedChoices.Add(wxString::Format("%d", i));
-    sbSizerFast->Add(new wxStaticText(this, wxID_ANY, _("USB speed")), 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
-    m_speedChoice = new wxChoice(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, speedChoices);
-    m_speedChoice->SetToolTip(_("Toupcam_put_Speed, 0 .. the camera's maximum. Auto follows the\r\n"
-                                "Fast transfer box. Takes effect on the next connection."));
-    sbSizerFast->Add(m_speedChoice, 0, wxALL, 5);
+    m_videoMode = new wxCheckBox(this, wxID_ANY, _("Video mode (free running)"));
+    m_videoMode->SetToolTip(_("Toupcam_put_Option(TOUPCAM_OPTION_TRIGGER). On: the camera free-runs and\r\n"
+                              "you get the newest frame; a long exposure can then overlap a guide pulse.\r\n"
+                              "Off: one software trigger per frame, which is the upstream behaviour."));
+    sbSizerFast->Add(m_videoMode, 0, wxALL, 5);
+
+    wxBoxSizer *speedRow = new wxBoxSizer(wxHORIZONTAL);
+    speedRow->Add(new wxStaticText(this, wxID_ANY, _("USB speed")), 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
+    m_speedChoice = new wxChoice(this, wxID_ANY);
+    m_speedChoice->SetToolTip(_("Toupcam_put_Speed, 0 up to the maximum the camera reports.\r\n"
+                                "The list is filled from the last connection."));
+    speedRow->Add(m_speedChoice, 0, wxALL, 5);
+    sbSizerFast->Add(speedRow, 0, wxEXPAND, 0);
+
+    wxBoxSizer *rtRow = new wxBoxSizer(wxHORIZONTAL);
+    rtRow->Add(new wxStaticText(this, wxID_ANY, _("RealTime")), 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
+    m_realTimeChoice = new wxChoice(this, wxID_ANY);
+    m_realTimeChoice->Append(_("0 - Off: stop grabbing when the queue is full"));
+    m_realTimeChoice->Append(_("1 - Both: drop all pending frames"));
+    m_realTimeChoice->Append(_("2 - Soft: drop pending, keep DDR"));
+    m_realTimeChoice->SetToolTip(_("Toupcam_put_RealTime. This is the stale-frame policy, not a rate\r\n"
+                                   "limit: 0 keeps everything (and stalls when full), 1 keeps only the\r\n"
+                                   "newest frame."));
+    rtRow->Add(m_realTimeChoice, 0, wxALL, 5);
+    sbSizerFast->Add(rtRow, 0, wxEXPAND, 0);
 
     bSizer12->Add(sbSizerFast, 1, wxEXPAND, 5);
 
@@ -879,16 +889,23 @@ void CameraToupTek::ShowPropertyDialog()
         dlg.m_bpp8->SetValue(true);
     else
         dlg.m_bpp16->SetValue(true);
-    dlg.m_fastTransfer->SetValue(pConfig->Profile.GetBoolean("/camera/ToupTek/FastTransfer", true));
+    dlg.m_videoMode->SetValue(pConfig->Profile.GetBoolean("/camera/ToupTek/VideoMode", true));
+    int const maxSpeed = wxMax(1, pConfig->Profile.GetInt("/camera/ToupTek/MaxSpeed", 3));
+    for (int i = 0; i <= maxSpeed; ++i)
+        dlg.m_speedChoice->Append(wxString::Format("%d", i));
     int speedValue = pConfig->Profile.GetInt("/camera/ToupTek/Speed", -1);
-    dlg.m_speedChoice->SetSelection(speedValue < 0 ? 0 : wxMin(speedValue, 3) + 1);
+    if (speedValue < 0 || speedValue > maxSpeed)
+        speedValue = maxSpeed;
+    dlg.m_speedChoice->SetSelection(speedValue);
+    int rt = pConfig->Profile.GetInt("/camera/ToupTek/RealTime", 0);
+    dlg.m_realTimeChoice->SetSelection(rt < 0 || rt > 2 ? 0 : rt);
     if (dlg.ShowModal() == wxID_OK)
     {
         m_cam.m_bpp = dlg.m_bpp8->GetValue() ? 8 : 16;
         pConfig->Profile.SetInt("/camera/ToupTek/bpp", m_cam.m_bpp);
-        pConfig->Profile.SetBoolean("/camera/ToupTek/FastTransfer", dlg.m_fastTransfer->GetValue());
-        int const sel = dlg.m_speedChoice->GetSelection();
-        pConfig->Profile.SetInt("/camera/ToupTek/Speed", sel <= 0 ? -1 : sel - 1);
+        pConfig->Profile.SetBoolean("/camera/ToupTek/VideoMode", dlg.m_videoMode->GetValue());
+        pConfig->Profile.SetInt("/camera/ToupTek/Speed", dlg.m_speedChoice->GetSelection());
+        pConfig->Profile.SetInt("/camera/ToupTek/RealTime", dlg.m_realTimeChoice->GetSelection());
     }
 }
 
