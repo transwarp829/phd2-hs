@@ -439,11 +439,15 @@ bool CameraToupTek::Connect(const wxString& camIdArg)
         Debug.Write(wxString::Format("TOUPTEK: Toupcam_get_ExpoAGainRange failed with status 0x%x\n", hr));
     }
 
+    // FastTransfer is the single user-facing switch (camera properties dialog);
+    // the individual keys stay available for finer overrides.
+    bool const fastTransfer = pConfig->Profile.GetBoolean("/camera/ToupTek/FastTransfer", true);
+
     // The connect path has always pinned the USB transfer speed to 0, the slow
     // end of the range. At full resolution the speed cap, not the sensor, can be
     // what limits the frame rate, so allow overriding it.
     // -1 means the camera's own maximum; the connect path used to pin this to 0
-    m_speed = pConfig->Profile.GetInt("/camera/ToupTek/Speed", -1);
+    m_speed = pConfig->Profile.GetInt("/camera/ToupTek/Speed", fastTransfer ? -1 : 0);
     if (m_speed < 0)
         m_speed = info->model ? (int) info->model->maxspeed : 0;
     if (info->model && m_speed > (int) info->model->maxspeed)
@@ -455,7 +459,7 @@ bool CameraToupTek::Connect(const wxString& camIdArg)
 
     // RealTime tells the SDK to deliver frames as they arrive rather than pacing
     // them; some bodies throttle the stream in this mode, so allow turning it off.
-    int realtime = pConfig->Profile.GetInt("/camera/ToupTek/RealTime", 0) ? 1 : 0;
+    int realtime = pConfig->Profile.GetInt("/camera/ToupTek/RealTime", fastTransfer ? 0 : 1) ? 1 : 0;
     if (FAILED(Toupcam_put_RealTime(m_cam.m_h, realtime)))
         Debug.Write(wxString::Format("TOUPTEK: Toupcam_put_RealTime(%d) failed with status 0x%x\n", realtime, hr));
     else
@@ -479,7 +483,7 @@ bool CameraToupTek::Connect(const wxString& camIdArg)
     // Free-running video mode is the SDK default but carries the stale-frame
     // risk that matters at long exposures, so keep the trigger default and
     // let the profile opt in.
-    m_videoMode = pConfig->Profile.GetBoolean("/camera/ToupTek/VideoMode", true);
+    m_videoMode = pConfig->Profile.GetBoolean("/camera/ToupTek/VideoMode", fastTransfer);
     m_cam.SetOption(TOUPCAM_OPTION_TRIGGER, m_videoMode ? 0 : 1);
     Debug.Write(wxString::Format("TOUPTEK: trigger option = %d (%s)\n",
                                  m_videoMode ? 0 : 1, m_videoMode ? "video" : "software trigger"));
@@ -813,6 +817,7 @@ struct ToupTekCameraDlg : public wxDialog
 {
     wxRadioButton *m_bpp8;
     wxRadioButton *m_bpp16;
+    wxCheckBox *m_fastTransfer;
     ToupTekCameraDlg();
 };
 
@@ -828,6 +833,15 @@ ToupTekCameraDlg::ToupTekCameraDlg() : wxDialog(wxGetApp().GetTopWindow(), wxID_
     sbSizer3->Add(m_bpp8, 0, wxALL, 5);
     sbSizer3->Add(m_bpp16, 0, wxALL, 5);
     bSizer12->Add(sbSizer3, 1, wxEXPAND, 5);
+
+    wxStaticBoxSizer *sbSizerFast = new wxStaticBoxSizer(new wxStaticBox(this, wxID_ANY, _("Transfer")), wxHORIZONTAL);
+    m_fastTransfer = new wxCheckBox(this, wxID_ANY, _("Fast transfer"));
+    m_fastTransfer->SetToolTip(_("Free-running video mode at the camera's maximum transfer rate.\r\n"
+                                  "Off restores the upstream behaviour: one software trigger per\r\n"
+                                  "frame, lowest transfer speed, real-time pacing.\r\n"
+                                  "Takes effect on the next connection."));
+    sbSizerFast->Add(m_fastTransfer, 0, wxALL, 5);
+    bSizer12->Add(sbSizerFast, 1, wxEXPAND, 5);
 
     wxStdDialogButtonSizer *sdbSizer2 = new wxStdDialogButtonSizer();
     wxButton *sdbSizer2OK = new wxButton(this, wxID_OK);
@@ -852,10 +866,12 @@ void CameraToupTek::ShowPropertyDialog()
         dlg.m_bpp8->SetValue(true);
     else
         dlg.m_bpp16->SetValue(true);
+    dlg.m_fastTransfer->SetValue(pConfig->Profile.GetBoolean("/camera/ToupTek/FastTransfer", true));
     if (dlg.ShowModal() == wxID_OK)
     {
         m_cam.m_bpp = dlg.m_bpp8->GetValue() ? 8 : 16;
         pConfig->Profile.SetInt("/camera/ToupTek/bpp", m_cam.m_bpp);
+        pConfig->Profile.SetBoolean("/camera/ToupTek/FastTransfer", dlg.m_fastTransfer->GetValue());
     }
 }
 
