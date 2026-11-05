@@ -54,7 +54,10 @@
 - `usImage::CalcStats` 用已有直方图取 `FiltMin/FiltMax`，去掉整帧 `Median3` 和第二趟扫描；
   `MinADU/MaxADU/MedianADU` 不变（8.3 MP 下 90 → 10 ms）（`c0a5454`）
 - 模拟器传感器尺寸可配置：`/SimCam/width`、`/SimCam/height`（默认 752x580）（`4a1129e`）
-- ToupTek 三个被钉死的传输参数改为可配置，默认值全部等于上游行为：
+- ToupTek **默认走最快路径**，并把这个选择放进相机属性对话框的一个勾选框
+  （`Fast transfer`，默认勾选，绑定 `/camera/ToupTek/FastTransfer`，需重连生效）。
+  取消勾选即完全回到上游行为（已实测：trigger 1、speed 0、RealTime 1）。
+  底层三个键仍可单独覆盖：
   - `/camera/ToupTek/VideoMode`（默认 0 = 每帧软件触发）。驱动一直设 `TOUPCAM_OPTION_TRIGGER=1`，
     而 SDK 默认是 0（自由运行视频）（`fcba816`）
   - `/camera/ToupTek/Speed`（默认 0 = 最低档）。连接时无条件 `Toupcam_put_Speed(0)`，
@@ -62,7 +65,7 @@
   - `/camera/ToupTek/RealTime`（默认 1 = 上游的 `Toupcam_put_RealTime(1)`）。这个标志在
     AE676M 上是**限流**的（`11afda0`）
 
-  实测 AE676M 3536x3536、8-bit、10 ms 曝光：
+  实测 AE676M 3536x3536、8-bit、10 ms 曝光（`ft` = FastTransfer 勾选）：
 
   | 配置 | 周期 | fps | 曝光+读出 |
   |---|---|---|---|
