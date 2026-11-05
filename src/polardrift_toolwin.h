@@ -95,7 +95,7 @@ struct PolarDriftToolWin : public wxFrame
 
     bool IsDrifting() { return m_drifting; };
     bool WatchDrift();
-    void PaintHelper(wxAutoBufferedPaintDCBase& dc, double scale);
+    void PaintHelper(wxDC& dc, double scale);
 
     wxDECLARE_EVENT_TABLE();
 };

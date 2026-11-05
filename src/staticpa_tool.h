@@ -40,7 +40,7 @@ class StaticPaTool
 
 public:
     static wxWindow *CreateStaticPaToolWindow();
-    static void PaintHelper(wxAutoBufferedPaintDCBase& dc, double scale);
+    static void PaintHelper(wxDC& dc, double scale);
     static void NotifyStarLost();
     static bool UpdateState();
 };

@@ -41,7 +41,7 @@ class PolarDriftTool
 public:
     static wxWindow *CreatePolarDriftToolWindow();
     static bool UpdateState();
-    static void PaintHelper(wxAutoBufferedPaintDCBase& dc, double scale);
+    static void PaintHelper(wxDC& dc, double scale);
 };
 
 #endif

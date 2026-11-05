@@ -177,7 +177,7 @@ struct StaticPaToolWin : public wxFrame
     void SetState(int ipos) { m_state = m_state | (1 << ipos); }
     void UnsetState(int ipos) { m_state = m_state & ~(1 << ipos) & 15; }
     void ClearState() { m_state = 0; }
-    void PaintHelper(wxAutoBufferedPaintDCBase& dc, double scale);
+    void PaintHelper(wxDC& dc, double scale);
     PHD_Point Radec2Px(const PHD_Point& radec);
     PHD_Point J2000Now(const PHD_Point& radec);
 

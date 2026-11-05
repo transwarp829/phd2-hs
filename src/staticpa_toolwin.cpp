@@ -129,7 +129,7 @@ wxWindow *StaticPaTool::CreateStaticPaToolWindow()
 
     return new StaticPaToolWin();
 }
-void StaticPaTool::PaintHelper(wxAutoBufferedPaintDCBase& dc, double scale)
+void StaticPaTool::PaintHelper(wxDC& dc, double scale)
 {
     StaticPaToolWin *win = static_cast<StaticPaToolWin *>(pFrame->pStaticPaTool);
     if (win)
@@ -933,7 +933,7 @@ PHD_Point StaticPaToolWin::J2000Now(const PHD_Point& radec)
     return PHD_Point(radeg, decdeg);
 }
 
-void StaticPaToolWin::PaintHelper(wxAutoBufferedPaintDCBase& dc, double scale)
+void StaticPaToolWin::PaintHelper(wxDC& dc, double scale)
 {
     double intens = 255;
     dc.SetPen(wxPen(wxColour(0, intens, intens), 1, wxPENSTYLE_SOLID));

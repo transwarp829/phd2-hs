@@ -85,7 +85,7 @@ wxWindow *PolarDriftTool::CreatePolarDriftToolWindow()
 
     return new PolarDriftToolWin();
 }
-void PolarDriftTool::PaintHelper(wxAutoBufferedPaintDCBase& dc, double scale)
+void PolarDriftTool::PaintHelper(wxDC& dc, double scale)
 {
     PolarDriftToolWin *win = static_cast<PolarDriftToolWin *>(pFrame->pPolarDriftTool);
     if (win)
@@ -364,7 +364,7 @@ void PolarDriftToolWin::FillPanel()
     Layout();
 }
 
-void PolarDriftToolWin::PaintHelper(wxAutoBufferedPaintDCBase& dc, double scale)
+void PolarDriftToolWin::PaintHelper(wxDC& dc, double scale)
 {
     if (m_num < 2)
     {

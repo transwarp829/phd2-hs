@@ -440,9 +440,10 @@ bool Guider::SetScaleImage(bool newScaleValue)
     return bError;
 }
 
-void Guider::OnErase(wxEraseEvent& evt)
+void Guider::OnErase(wxEraseEvent&)
 {
-    evt.Skip();
+    // PaintHelper always ends with a Blit covering the whole client area, so the
+    // background erase is a wasted full-area fill and can flash before the image.
 }
 
 void Guider::OnClose(wxCloseEvent& evt)
@@ -511,7 +512,21 @@ static void render_downscaled(const usImage& img, wxImage *out, int dstW, int ds
     }
 }
 
-bool Guider::PaintHelper(wxAutoBufferedPaintDCBase& dc, wxMemoryDC& memDC)
+// wxGraphicsContext::Create has overloads for wxWindowDC and wxMemoryDC but not
+// for the wxDC base, and PaintHelper takes a wxDC& so it can serve both a plain
+// wxPaintDC and a buffered DC.
+static wxGraphicsContext *make_graphics_context(wxDC& dc)
+{
+    if (wxWindowDC *wdc = dynamic_cast<wxWindowDC *>(&dc))
+        return wxGraphicsContext::Create(*wdc);
+
+    if (wxMemoryDC *mdc = dynamic_cast<wxMemoryDC *>(&dc))
+        return wxGraphicsContext::Create(*mdc);
+
+    return nullptr;
+}
+
+bool Guider::PaintHelper(wxDC& dc, wxMemoryDC& memDC)
 {
     bool bError = false;
 
@@ -718,7 +733,9 @@ bool Guider::PaintHelper(wxAutoBufferedPaintDCBase& dc, wxMemoryDC& memDC)
                                     ROUND(StarY * m_scaleFactor + rlabel * sin_nangle) - 6);
                     }
 
-                    wxGraphicsContext *gc = wxGraphicsContext::Create(dc);
+                    wxGraphicsContext *gc = make_graphics_context(dc);
+                    if (!gc)
+                        break;
                     gc->SetPen(wxPen(pFrame->pGraphLog->GetRaOrDxColor(), 1, wxPENSTYLE_DOT));
                     double step = (double) YImgSize / 10.0;
 
