@@ -329,8 +329,13 @@ void ProfileWindow::OnPaint(wxPaintEvent& WXUNUSED(evt))
             // (u - sx0) * zoom in the blitted bitmap: no extra centre term, and
             // the star's index coordinate maps straight through.
             const double zoom = width / (sz * 2.0);
-            auto toScreenX = [&](double u) { return imageLeftMargin + (u - sx0) * zoom; };
-            auto toScreenY = [&](double u) { return imgTop + (u - sy0) * zoom; };
+            // wxImage::Rescale maps destination pixel k to source coordinate
+            // (k + 0.5)/zoom - 0.5, i.e. a source index u lands at
+            // (u + 0.5)*zoom - 0.5. Without the half-pixel term the crosses sit
+            // 0.5*(zoom-1) toward the top-left of the star.
+            const double halfAdjust = 0.5 * zoom - 0.5;
+            auto toScreenX = [&](double u) { return imageLeftMargin + (u - sx0) * zoom + halfAdjust; };
+            auto toScreenY = [&](double u) { return imgTop + (u - sy0) * zoom + halfAdjust; };
 
             // green dotted cross = lock position
             dc.SetPen(wxPen(wxColor(0, 200, 0), 1, wxPENSTYLE_DOT));
@@ -348,17 +353,44 @@ void ProfileWindow::OnPaint(wxPaintEvent& WXUNUSED(evt))
                 s_timing = pConfig->Profile.GetBoolean("/Display/PaintTiming", false) ? 1 : 0;
             if (s_timing)
             {
-                // The crop's centroid was computed from the sensor pixels where the
-                // crop was taken, so this compares the drawn cross with the star
-                // without any rescale or stretch in between.
+                // Window-limited, background-subtracted centroid of the *rendered*
+                // panel plus the integer peak. A whole-panel centroid is pulled
+                // toward the panel centre by the background, which invents a
+                // sub-pixel error; the peak is quantised but unbiased.
+                wxImage zi = zoomedDBmp.ConvertToImage();
+                const unsigned char *zp = zi.GetData();
+                const int mx = (int) (starX - imageLeftMargin), my = (int) (starY - imgTop);
+                const int w0x = wxMax(0, mx - 40), w1x = wxMin(width, mx + 40);
+                const int w0y = wxMax(0, my - 40), w1y = wxMin(width, my + 40);
+                int lo = 255, hi = 0;
+                for (int yy = w0y; yy < w1y; ++yy)
+                    for (int xx = w0x; xx < w1x; ++xx)
+                    {
+                        const int v = zp[(yy * width + xx) * 3];
+                        if (v < lo) lo = v;
+                        if (v > hi) hi = v;
+                    }
+                const double thr = lo + 0.5 * (hi - lo);
+                double pcx = 0, pcy = 0, pcw = 0;
+                int bx = -1, by = -1, bv = -1;
+                for (int yy = w0y; yy < w1y; ++yy)
+                    for (int xx = w0x; xx < w1x; ++xx)
+                    {
+                        const int raw = zp[(yy * width + xx) * 3];
+                        if (raw > bv) { bv = raw; bx = xx; by = yy; }
+                        const double v = raw > thr ? raw - thr : 0.0;
+                        pcx += v * xx;
+                        pcy += v * yy;
+                        pcw += v;
+                    }
                 Debug.Write(wxString::Format(
-                    "StarProfile: zoom=%.2f sz=%d width=%d  cross=(%.1f,%.1f)  pos=(%.2f,%.2f)  "
-                    "raw=(%.2f,%.2f)  err=(%.2f,%.2f) image px\n",
-                    zoom, sz, width, starX - imageLeftMargin, starY - imgTop,
-                    curX, curY,
-                    pFrame->pGuider->StarCropCentroidX(), pFrame->pGuider->StarCropCentroidY(),
-                    pFrame->pGuider->StarCropCentroidX() - curX,
-                    pFrame->pGuider->StarCropCentroidY() - curY));
+                    "StarProfile: zoom=%.2f half=%.1f cross=(%.1f,%.1f) cen=(%.1f,%.1f) peak=(%d,%d) "
+                    "dCen=(%.1f,%.1f) dPeak=(%.1f,%.1f) px\n",
+                    zoom, halfAdjust, starX - imageLeftMargin, starY - imgTop,
+                    pcw > 0 ? pcx / pcw : -1, pcw > 0 ? pcy / pcw : -1, bx, by,
+                    pcw > 0 ? pcx / pcw - (starX - imageLeftMargin) : 0,
+                    pcw > 0 ? pcy / pcw - (starY - imgTop) : 0,
+                    bx - (starX - imageLeftMargin), by - (starY - imgTop)));
             }
 
             if (starX >= imageLeftMargin)
