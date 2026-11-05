@@ -242,6 +242,7 @@ struct ToupCam
 class CameraToupTek : public GuideCamera
 {
     ToupCam m_cam;
+    int m_speed;   // USB transfer speed; the connect path used to pin this to 0
     // TOUPCAM_OPTION_TRIGGER: 1 = one software trigger per frame (upstream
     // behaviour), 0 = free-running video mode, which is the SDK default
     bool m_videoMode;
@@ -272,6 +273,7 @@ public:
 CameraToupTek::CameraToupTek()
 {
     m_videoMode = false;
+    m_speed = 0;
     Debug.Write(wxString::Format("TOUPTEK: ToupCam SDK version %s\n", Toupcam_Version()));
 
     Name = _T("ToupTek Camera");
@@ -437,8 +439,18 @@ bool CameraToupTek::Connect(const wxString& camIdArg)
         Debug.Write(wxString::Format("TOUPTEK: Toupcam_get_ExpoAGainRange failed with status 0x%x\n", hr));
     }
 
-    if (FAILED(hr = Toupcam_put_Speed(m_cam.m_h, 0)))
-        Debug.Write(wxString::Format("TOUPTEK: Toupcam_put_Speed(0) failed with status 0x%x\n", hr));
+    // The connect path has always pinned the USB transfer speed to 0, the slow
+    // end of the range. At full resolution the speed cap, not the sensor, can be
+    // what limits the frame rate, so allow overriding it.
+    m_speed = pConfig->Profile.GetInt("/camera/ToupTek/Speed", 0);
+    if (m_speed < 0)
+        m_speed = 0;
+    if (info->model && m_speed > (int) info->model->maxspeed)
+        m_speed = (int) info->model->maxspeed;
+    Debug.Write(wxString::Format("TOUPTEK: speed option = %d (max %u)\n", m_speed,
+                                 info->model ? info->model->maxspeed : 0));
+    if (FAILED(hr = Toupcam_put_Speed(m_cam.m_h, (unsigned short) m_speed)))
+        Debug.Write(wxString::Format("TOUPTEK: Toupcam_put_Speed(%d) failed with status 0x%x\n", m_speed, hr));
 
     if (FAILED(Toupcam_put_RealTime(m_cam.m_h, 1)))
         Debug.Write(wxString::Format("TOUPTEK: Toupcam_put_RealTime(1) failed with status 0x%x\n", hr));
@@ -486,12 +498,12 @@ bool CameraToupTek::Connect(const wxString& camIdArg)
     unsigned short speed;
     if (SUCCEEDED(hr = Toupcam_get_Speed(m_cam.m_h, &speed)))
     {
-        Debug.Write(wxString::Format("TOUPTEK: speed = %hu, max = %u\n", speed, info->model->maxspeed));
-        if (speed != 0)
+        Debug.Write(wxString::Format("TOUPTEK: speed = %hu (requested %d), max = %u\n", speed, m_speed,
+                                     info->model->maxspeed));
+        if ((int) speed != m_speed)
         {
-            Debug.Write("TOUPTEK: set speed to 0\n");
-            if (FAILED(hr = Toupcam_put_Speed(m_cam.m_h, 0)))
-                Debug.Write(wxString::Format("TOUPTEK: Toupcam_put_Speed(0) failed with status 0x%x\n", hr));
+            if (FAILED(hr = Toupcam_put_Speed(m_cam.m_h, (unsigned short) m_speed)))
+                Debug.Write(wxString::Format("TOUPTEK: Toupcam_put_Speed(%d) failed with status 0x%x\n", m_speed, hr));
         }
     }
     else
