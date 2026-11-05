@@ -288,8 +288,6 @@ void ProfileWindow::OnPaint(wxPaintEvent& WXUNUSED(evt))
         // grab width(30) px box around lock pos, scale by 2 & display next to profile
         double LockX = pFrame->pGuider->LockPosition().X * scaleFactor;
         double LockY = pFrame->pGuider->LockPosition().Y * scaleFactor;
-        double dStarX = LockX - pFrame->pGuider->CurrentPosition().X * scaleFactor;
-        double dStarY = LockY - pFrame->pGuider->CurrentPosition().Y * scaleFactor;
         // grab the subframe
         wxBitmap dBmp(*img);
         // Star region scaling is useful only if scaleFactor >=1. Huge sensors result in a scaleFactor << 1 and an unusable
@@ -331,15 +329,26 @@ void ProfileWindow::OnPaint(wxPaintEvent& WXUNUSED(evt))
         dc.SetFont(smallFont);
         dc.DrawText(toggleMsg, imageLeftMargin, imgTop - smallFontHeight);
 
-        // lines for the lock pos + red dot at star centroid
+        // The crop is centred on the integer display pixel (lkx, lky), not on the
+        // fractional lock point, so every position has to be mapped through that
+        // integer anchor. Mapping from the fractional LockX instead put both
+        // crosses off by the lock point's sub-pixel remainder times the zoom -
+        // up to half a display pixel, i.e. several screen pixels at 10x.
+        const double zoom = (sz > 0) ? width / (sz * 2.0) : 1.0;
+        const double curX = pFrame->pGuider->CurrentPosition().X * scaleFactor;
+        const double curY = pFrame->pGuider->CurrentPosition().Y * scaleFactor;
+        auto toScreenX = [&](double u) { return imageLeftMargin + midwidth + (u - lkx) * zoom; };
+        auto toScreenY = [&](double u) { return imgTop + midwidth + (u - lky) * zoom; };
+
+        // green dotted cross = lock position
         dc.SetPen(wxPen(wxColor(0, 200, 0), 1, wxPENSTYLE_DOT));
-        dc.DrawLine(imageLeftMargin, midwidth + imgTop, imageLeftMargin + width, midwidth + imgTop);
-        dc.DrawLine(imageLeftMargin + midwidth, imgTop, imageLeftMargin + midwidth, width + imgTop);
+        dc.DrawLine(imageLeftMargin, toScreenY(LockY), imageLeftMargin + width, toScreenY(LockY));
+        dc.DrawLine(toScreenX(LockX), imgTop, toScreenX(LockX), width + imgTop);
         if (sz > 0)
         {
-            // and a small cross at the centroid
-            double starX = imageLeftMargin + midwidth - dStarX * (width / (sz * 2.0)) + 1,
-                   starY = midwidth - dStarY * (width / (sz * 2.0)) + 1 + imgTop;
+            // red cross = current centroid; its distance from the green cross is
+            // exactly the guide error
+            double starX = toScreenX(curX), starY = toScreenY(curY);
             if (starX >= imageLeftMargin)
             {
                 dc.SetPen(RedPen);
