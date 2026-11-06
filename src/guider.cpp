@@ -1503,9 +1503,10 @@ void Guider::UpdateGuideState(usImage *pImage, bool bStopping)
             if (m_lastFrameTimeUs != 0)
             {
                 double dt = (now - m_lastFrameTimeUs).GetValue() / 1000.0; // ms
-                // ignore gaps caused by pausing, reconnecting or a stalled loop
-                // (dt is in milliseconds: anything from 1 s up is not a frame interval)
-                if (dt > 0.0 && dt < 1000.0)
+                // ignore gaps caused by pausing, reconnecting or a stalled loop; dt is in
+                // milliseconds and a long exposure is a legitimate interval, so the cutoff
+                // has to sit well above the shortest sensible cadence and well below a pause
+                if (dt > 0.0 && dt < 60000.0)
                     m_frameIntervalMs = m_frameIntervalMs > 0.0 ? 0.8 * m_frameIntervalMs + 0.2 * dt : dt;
             }
             m_lastFrameTimeUs = now;
