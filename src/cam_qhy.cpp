@@ -461,6 +461,16 @@ void Camera_QHY::ShowPropertyDialog()
 
         dlg.DoLayoutAdaptation();
 
+        // Last resort for the composite wxSpinCtrl: on some systems it loses its
+        // minimum size during the SetRange/SetValue/Enable sequence above and the
+        // sizer then lays it out with nothing but its border. Pin it again here,
+        // after everything else has run and immediately before the dialog is shown.
+        dlg.m_offsetSpinner->SetMinSize(wxSize(60, 25));
+        dlg.m_usbTrafficSpinner->SetMinSize(wxSize(60, 25));
+        dlg.m_offsetSpinner->InvalidateBestSize();
+        dlg.m_usbTrafficSpinner->InvalidateBestSize();
+        dlg.Layout();
+
         // One-shot layout dump: the Offset/USB traffic spinners have been reported
         // missing on one machine, and a zero or off-dialog rect says why.
         {
