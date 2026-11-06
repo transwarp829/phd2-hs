@@ -145,7 +145,6 @@ struct ToupCam
         {
             sz->x = info.width;
             sz->y = info.height;
-            log_frame_timing(info);
             return true;
         }
         // E_PENDING means "no frame ready yet"; the caller already waited for the
@@ -159,7 +158,6 @@ struct ToupCam
             {
                 sz->x = info.width;
                 sz->y = info.height;
-                log_frame_timing(info);
                 return true;
             }
         }
@@ -167,38 +165,6 @@ struct ToupCam
         return false;
     }
 
-    // Frame-age probe. The SDK timestamp is in microseconds with an unspecified
-    // epoch, so only its *delta* is used: if it advances slower than the wall
-    // clock, the frames we pull are from further back in the queue.
-    void log_frame_timing(const ToupcamFrameInfoV3& info)
-    {
-        static int enabled = -1;
-        if (enabled < 0)
-            enabled = pConfig->Profile.GetBoolean("/camera/ToupTek/FrameTiming", false) ? 1 : 0;
-        if (!enabled)
-            return;
-
-        static LARGE_INTEGER freq = {0};
-        if (freq.QuadPart == 0)
-            QueryPerformanceFrequency(&freq);
-        LARGE_INTEGER now;
-        QueryPerformanceCounter(&now);
-        double const wallUs = 1e6 * (double) now.QuadPart / (double) freq.QuadPart;
-
-        static double prevWall = 0;
-        static unsigned prevSeq = 0;
-        static unsigned long long prevTs = 0;
-        static int n = 0;
-
-        if (prevWall > 0 && (n++ % 10) == 0)
-            Debug.Write(wxString::Format("TOUPTEK frame: seq=%u (+%u) tsDelta=%.1f ms wallDelta=%.1f ms\n",
-                                         info.seq, info.seq - prevSeq,
-                                         prevTs ? (info.timestamp - prevTs) / 1000.0 : 0.0,
-                                         (wallUs - prevWall) / 1000.0));
-        prevWall = wallUs;
-        prevSeq = info.seq;
-        prevTs = info.timestamp;
-    }
 
     bool PullImage(void *buf, wxSize *sz)
     {

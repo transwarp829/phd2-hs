@@ -346,53 +346,6 @@ void ProfileWindow::OnPaint(wxPaintEvent& WXUNUSED(evt))
             // exactly the guide error
             double starX = toScreenX(curX), starY = toScreenY(curY);
 
-            // probe: where the star actually is in the magnified crop, so the
-            // placement of the cross can be checked instead of eyeballed
-            static int s_timing = -1;
-            if (s_timing < 0)
-                s_timing = pConfig->Profile.GetBoolean("/Display/PaintTiming", false) ? 1 : 0;
-            if (s_timing)
-            {
-                // Window-limited, background-subtracted centroid of the *rendered*
-                // panel plus the integer peak. A whole-panel centroid is pulled
-                // toward the panel centre by the background, which invents a
-                // sub-pixel error; the peak is quantised but unbiased.
-                wxImage zi = zoomedDBmp.ConvertToImage();
-                const unsigned char *zp = zi.GetData();
-                const int mx = (int) (starX - imageLeftMargin), my = (int) (starY - imgTop);
-                const int w0x = wxMax(0, mx - 40), w1x = wxMin(width, mx + 40);
-                const int w0y = wxMax(0, my - 40), w1y = wxMin(width, my + 40);
-                int lo = 255, hi = 0;
-                for (int yy = w0y; yy < w1y; ++yy)
-                    for (int xx = w0x; xx < w1x; ++xx)
-                    {
-                        const int v = zp[(yy * width + xx) * 3];
-                        if (v < lo) lo = v;
-                        if (v > hi) hi = v;
-                    }
-                const double thr = lo + 0.5 * (hi - lo);
-                double pcx = 0, pcy = 0, pcw = 0;
-                int bx = -1, by = -1, bv = -1;
-                for (int yy = w0y; yy < w1y; ++yy)
-                    for (int xx = w0x; xx < w1x; ++xx)
-                    {
-                        const int raw = zp[(yy * width + xx) * 3];
-                        if (raw > bv) { bv = raw; bx = xx; by = yy; }
-                        const double v = raw > thr ? raw - thr : 0.0;
-                        pcx += v * xx;
-                        pcy += v * yy;
-                        pcw += v;
-                    }
-                Debug.Write(wxString::Format(
-                    "StarProfile: zoom=%.2f half=%.1f cross=(%.1f,%.1f) cen=(%.1f,%.1f) peak=(%d,%d) "
-                    "dCen=(%.1f,%.1f) dPeak=(%.1f,%.1f) px\n",
-                    zoom, halfAdjust, starX - imageLeftMargin, starY - imgTop,
-                    pcw > 0 ? pcx / pcw : -1, pcw > 0 ? pcy / pcw : -1, bx, by,
-                    pcw > 0 ? pcx / pcw - (starX - imageLeftMargin) : 0,
-                    pcw > 0 ? pcy / pcw - (starY - imgTop) : 0,
-                    bx - (starX - imageLeftMargin), by - (starY - imgTop)));
-            }
-
             if (starX >= imageLeftMargin)
             {
                 dc.SetPen(RedPen);

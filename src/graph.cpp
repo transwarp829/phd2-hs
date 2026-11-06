@@ -1260,32 +1260,8 @@ enum
 
 // measures the whole paint including the buffered DC's flush: declared before the
 // DC, so it is destroyed after it
-struct GraphPaintTimer
-{
-    wxLongLong t0, t1, t2, t3, t4;
-    wxWindow *win;
-    GraphPaintTimer(wxWindow *w) : t0(wxGetUTCTimeUSec()), t1(0), t2(0), t3(0), t4(0), win(w) { }
-    ~GraphPaintTimer()
-    {
-        static int on = -1;
-        if (on < 0)
-            on = pConfig->Profile.GetBoolean("/Display/PaintTiming", false) ? 1 : 0;
-        if (on)
-        {
-            wxLongLong now = wxGetUTCTimeUSec();
-            wxSize sz = win->GetClientSize();
-            Debug.Write(wxString::Format(
-                "GraphPaint: dc=%lld clear=%lld grid=%lld plot=%lld tail=%lld total=%lld  %dx%d\n",
-                (t1 - t0).GetValue() / 1000, (t2 - t1).GetValue() / 1000, (t3 - t2).GetValue() / 1000,
-                (t4 - t3).GetValue() / 1000, (now - t4).GetValue() / 1000, (now - t0).GetValue() / 1000, sz.x, sz.y));
-        }
-    }
-};
-
 void GraphLogClientWindow::OnPaint(wxPaintEvent& WXUNUSED(evt))
 {
-    GraphPaintTimer gptimer(this);
-
     wxSize size(GetClientSize());
     if (size.x <= 0 || size.y <= 0)
         return;
@@ -1301,7 +1277,6 @@ void GraphLogClientWindow::OnPaint(wxPaintEvent& WXUNUSED(evt))
     }
     wxMemoryDC dc;
     dc.SelectObject(*m_backBuffer);
-    gptimer.t1 = wxGetUTCTimeUSec();
     wxSize center(size.x / 2, size.y / 2);
 
     const int leftEdge = 0;
@@ -1425,8 +1400,6 @@ void GraphLogClientWindow::OnPaint(wxPaintEvent& WXUNUSED(evt))
         dc.Blit(0, 0, size.x, size.y, &bgdc, 0, 0);
         bgdc.SelectObject(wxNullBitmap);
     }
-    gptimer.t2 = wxGetUTCTimeUSec();
-    gptimer.t3 = wxGetUTCTimeUSec();
 
     // Draw data
     if (m_history.size() > 0)
@@ -1653,7 +1626,6 @@ void GraphLogClientWindow::OnPaint(wxPaintEvent& WXUNUSED(evt))
         m_pOscIndex->SetLabel(wxString::Format("RA Osc: %4.2f", m_stats.osc_index));
     }
 
-    gptimer.t4 = wxGetUTCTimeUSec();
 
     wxPaintDC screen(this);
     screen.Blit(0, 0, size.x, size.y, &dc, 0, 0);

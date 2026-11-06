@@ -1182,35 +1182,8 @@ inline static void DrawBox(wxDC& dc, const PHD_Point& star, int halfW, double sc
 }
 
 // Define the repainting behaviour
-// measures the whole paint including the DC's flush: declared before the DC, so
-// it is destroyed after it
-struct ImagePaintTimer
-{
-    wxLongLong t0;
-    wxWindow *win;
-    wxLongLong *inner;
-    ImagePaintTimer(wxWindow *w, wxLongLong *in) : t0(wxGetUTCTimeUSec()), win(w), inner(in) { }
-    ~ImagePaintTimer()
-    {
-        static int on = -1;
-        if (on < 0)
-            on = pConfig->Profile.GetBoolean("/Display/PaintTiming", false) ? 1 : 0;
-        if (on)
-        {
-            wxLongLong now = wxGetUTCTimeUSec();
-            wxSize sz = win->GetClientSize();
-            Debug.Write(wxString::Format("ImagePaint: inside=%lld dc+overlay=%lld total=%lld  %dx%d\n",
-                                         inner ? inner->GetValue() / 1000 : -1, (now - t0 - *inner).GetValue() / 1000,
-                                         (now - t0).GetValue() / 1000, sz.x, sz.y));
-        }
-    }
-};
-
 void GuiderMultiStar::OnPaint(wxPaintEvent& event)
 {
-    wxLongLong innerUs = 0;
-    ImagePaintTimer iptimer(this, &innerUs);
-
     // PaintHelper composes off-screen and ends with a Blit covering the whole
     // client area, so wxBufferedPaintDC's extra client-area bitmap (wxALWAYS_
     // NATIVE_DOUBLE_BUFFER is 0 on MSW) is pure cost: ~15 ms at 1.5 MP, ~39 ms
@@ -1220,9 +1193,7 @@ void GuiderMultiStar::OnPaint(wxPaintEvent& event)
 
     try
     {
-        wxLongLong p0 = wxGetUTCTimeUSec();
         bool phErr = PaintHelper(dc, memDC);
-        innerUs = wxGetUTCTimeUSec() - p0;
         if (phErr)
         {
             throw ERROR_INFO("PaintHelper failed");

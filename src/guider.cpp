@@ -173,8 +173,6 @@ Guider::Guider(wxWindow *parent, int xSize, int ySize)
     m_displayedImage = new wxImage(XWinSize, YWinSize, true);
     m_starCropImage = NULL;
     m_starCropX0 = m_starCropY0 = m_starCropSz = 0;
-    m_starCropCx = m_starCropCy = 0.0;
-    m_displayedFrameNum = 0;
     m_paused = PAUSE_NONE;
     m_starFoundTimestamp = 0;
     m_avgDistanceNeedReset = false;
@@ -532,8 +530,6 @@ bool Guider::PaintHelper(wxDC& dc, wxMemoryDC& memDC)
 {
     bool bError = false;
 
-    wxLongLong pt0 = wxGetUTCTimeUSec();
-    wxLongLong pt1 = pt0, pt2 = pt0, pt3 = pt0, pt4 = pt0;
 
     int XImgSize = 0, YImgSize = 0;
 
@@ -578,7 +574,6 @@ bool Guider::PaintHelper(wxDC& dc, wxMemoryDC& memDC)
 
             XImgSize = dstW;
             YImgSize = dstH;
-            m_displayedFrameNum = m_pCurrentImage->FrameNum;
 
             if (m_fusedRender && dstW > 0 && dstH > 0 && dstW <= srcW && dstH <= srcH)
             {
@@ -661,44 +656,12 @@ bool Guider::PaintHelper(wxDC& dc, wxMemoryDC& memDC)
                         m_starCropY0 = cyp - half;
                         m_starCropSz = half;
 
-                        // centroid from the sensor pixels, background subtracted:
-                        // the same numbers the crosses are placed from, so the star
-                        // profile can be checked without any rendering in between
-                        unsigned short lo = 0xffff, hi = 0;
-                        for (int y = 0; y < cw; ++y)
-                        {
-                            const unsigned short *row = base + (size_t) y * W;
-                            for (int x = 0; x < cw; ++x)
-                            {
-                                if (row[x] < lo) lo = row[x];
-                                if (row[x] > hi) hi = row[x];
-                            }
-                        }
-                        const double thr = lo + 0.1 * ((double) hi - lo);
-                        double sw = 0.0, swx = 0.0, swy = 0.0;
-                        for (int y = 0; y < cw; ++y)
-                        {
-                            const unsigned short *row = base + (size_t) y * W;
-                            for (int x = 0; x < cw; ++x)
-                            {
-                                const double v = row[x] > thr ? row[x] - thr : 0.0;
-                                sw += v;
-                                swx += v * (cxp - half + x);
-                                swy += v * (cyp - half + y);
-                            }
-                        }
-                        if (sw > 0.0)
-                        {
-                            m_starCropCx = swx / sw;
-                            m_starCropCy = swy / sw;
-                        }
                     }
                     delete[] lut;
                 }
             }
         }
 
-        pt1 = wxGetUTCTimeUSec();
 
         if (XImgSize <= 0 || YImgSize <= 0)
         {
@@ -709,30 +672,14 @@ bool Guider::PaintHelper(wxDC& dc, wxMemoryDC& memDC)
         // important to provide explicit color for r,g,b, optional args to Size().
         // If default args are provided wxWidgets performs some expensive histogram
         // operations.
-        pt2 = wxGetUTCTimeUSec();
         wxBitmap DisplayedBitmap;
         if (m_displayedImage->GetWidth() == XWinSize && m_displayedImage->GetHeight() == YWinSize)
             DisplayedBitmap = wxBitmap(*m_displayedImage);
         else
             DisplayedBitmap = wxBitmap(m_displayedImage->Size(wxSize(XWinSize, YWinSize), wxPoint(0, 0), 0, 0, 0));
-        pt3 = wxGetUTCTimeUSec();
         memDC.SelectObject(DisplayedBitmap);
 
         dc.Blit(0, 0, DisplayedBitmap.GetWidth(), DisplayedBitmap.GetHeight(), &memDC, 0, 0, wxCOPY, false);
-        pt4 = wxGetUTCTimeUSec();
-
-        // read once per process: the profile read itself is logged by the config layer
-        static int s_paintTiming = -1;
-        if (s_paintTiming < 0)
-            s_paintTiming = pConfig->Profile.GetBoolean("/Display/PaintTiming", false) ? 1 : 0;
-
-        if (s_paintTiming)
-        {
-            Debug.Write(wxString::Format("PaintTiming: prep=%lld rescale=%lld bmp=%lld blit=%lld total=%lld  img=%dx%d win=%dx%d\n",
-                                         (pt1 - pt0).GetValue() / 1000, (pt2 - pt1).GetValue() / 1000,
-                                         (pt3 - pt2).GetValue() / 1000, (pt4 - pt3).GetValue() / 1000,
-                                         (pt4 - pt0).GetValue() / 1000, XImgSize, YImgSize, XWinSize, YWinSize));
-        }
 
         if (m_overlayMode)
         {
