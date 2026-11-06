@@ -30,8 +30,9 @@
 
 - `MakeSpinCtrl` 把 `GetSizeFromTextSize()` 的结果交给 `SetInitialSize()`。wx 3.2 的实现会临时包一个
   text 控件去量字，量不出来时返回 0×0，而 `SetInitialSize(0,0)` 会把控件的最小尺寸钉成零，
-  sizer 于是给它零面积——QHY 设置对话框里的 Offset / USB Traffic 数字框就是这样整个消失的，
-  连对话框一起塌到 187x226。现在只有尺寸为正时才应用，退化时保留 wx 自身的最佳尺寸并打一行日志
+  sizer 于是给它零面积——QHY 设置对话框里的 Offset / USB Traffic 数字框就是这样消失的
+  （对话框本身尺寸正常，宽度是最长的复选框标签撑出来的，容易误判成整体塌陷）。
+  现在只有尺寸为正时才应用，退化时保留 wx 自身的最佳尺寸并打一行日志
   （`70a507d`；`dc350b3` 是定位用的矩形诊断）
 - 语言：PHD2 把 `wxLanguage` 的**原始枚举值**存进 `HKCU\Software\StarkLabs\PHDGuidingV2\wxLanguage`，
   这个枚举在 wx 3.0.5 与 3.2 之间重新编号过（46 从「简体中文」变成「阿拉伯语」）。阿拉伯语带
