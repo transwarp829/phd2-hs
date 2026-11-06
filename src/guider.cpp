@@ -1502,10 +1502,9 @@ void Guider::UpdateGuideState(usImage *pImage, bool bStopping)
             wxLongLong now = wxGetUTCTimeUSec();
             if (m_lastFrameTimeUs != 0)
             {
-                double dt = (now - m_lastFrameTimeUs).GetValue() / 1000.0; // ms
+                double dt = (now - m_lastFrameTimeUs).GetValue() / 1000.0;
                 // ignore gaps caused by pausing, reconnecting or a stalled loop
-                // (dt is in milliseconds: anything from 1 s up is not a frame interval)
-                if (dt > 0.0 && dt < 1000.0)
+                if (dt > 1.0 && dt < 60000.0)
                     m_frameIntervalMs = m_frameIntervalMs > 0.0 ? 0.8 * m_frameIntervalMs + 0.2 * dt : dt;
             }
             m_lastFrameTimeUs = now;
