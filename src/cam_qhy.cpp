@@ -322,7 +322,6 @@ struct QHYCameraDlg : public wxDialog
     wxCheckBox *m_rownrCb;
     wxCheckBox *m_speedModeCb;
     wxCheckBox *m_liveModeCb;
-wxFlexGridSizer *m_optionsGrid;
     wxCheckBox *m_highGainCb;
 
     QHYCameraDlg();
@@ -361,7 +360,6 @@ QHYCameraDlg::QHYCameraDlg() : wxDialog(wxGetApp().GetTopWindow(), wxID_ANY, wxE
 
     cameraOptionsSizer->Add(m_gainText, 0, wxALL, 5);
 
-    m_optionsGrid = optionsGrid;
     m_offsetSpinner = NewSpinnerInt(this, wxDefaultSize,
                                     pConfig->Profile.GetInt(CONFIG_PATH_QHY_OFFSET, DEFAULT_OFFSET), 0, 1000, 1, wxEmptyString);
     AddTableEntryPair(this, optionsGrid, _("Offset"), m_offsetSpinner);
@@ -479,33 +477,6 @@ void Camera_QHY::ShowPropertyDialog()
         // the constructor Fit() ran before any of the SetRange/checkbox values were
         // applied, so re-fit now that the content has its final size
         dlg.Fit();
-
-        // One-shot layout dump: the Offset/USB traffic spinners have been reported
-        // missing on one machine, and a zero or off-dialog rect says why.
-        {
-            wxSize const dsz = dlg.GetClientSize();
-            wxRect const ro = dlg.m_offsetSpinner->GetRect();
-            wxRect const rt = dlg.m_usbTrafficSpinner->GetRect();
-            // dump the grid that holds the two rows: if the labels collapsed too,
-            // the grid itself is getting no space and the spinners are innocent
-            Debug.Write(wxString::Format("QHY grid: size=(%d,%d) items=%d\n", dlg.m_optionsGrid->GetSize().x,
-                                         dlg.m_optionsGrid->GetSize().y, (int) dlg.m_optionsGrid->GetItemCount()));
-            for (size_t i = 0; i < dlg.m_optionsGrid->GetItemCount(); ++i)
-            {
-                wxSizerItem *it = dlg.m_optionsGrid->GetItem(i);
-                wxWindow *w = it->GetWindow();
-                Debug.Write(wxString::Format("QHY grid item %d: %s item=(%d,%d) win=(%d,%d) shown=%d\n", (int) i,
-                                             w && w->GetClassInfo() ? w->GetClassInfo()->GetClassName() : wxT("?"),
-                                             it->GetSize().x, it->GetSize().y, w ? w->GetSize().x : -1,
-                                             w ? w->GetSize().y : -1, w ? (w->IsShown() ? 1 : 0) : -1));
-            }
-            Debug.Write(wxString::Format(
-                "QHY dialog: %dx%d | offset rect=(%d,%d %dx%d) shown=%d enabled=%d has=%d | usbtraffic rect=(%d,%d %dx%d) shown=%d enabled=%d has=%d\n",
-                dsz.x, dsz.y, ro.x, ro.y, ro.width, ro.height, dlg.m_offsetSpinner->IsShownOnScreen() ? 1 : 0,
-                dlg.m_offsetSpinner->IsEnabled() ? 1 : 0, m_hasOffset ? 1 : 0, rt.x, rt.y, rt.width, rt.height,
-                dlg.m_usbTrafficSpinner->IsShownOnScreen() ? 1 : 0, dlg.m_usbTrafficSpinner->IsEnabled() ? 1 : 0,
-                m_hasUsbTraffic ? 1 : 0));
-        }
 
         if (dlg.ShowModal() == wxID_OK)
         {
@@ -1202,8 +1173,6 @@ bool Camera_QHY::Capture(usImage& img, const CaptureParams& captureParams)
     // Writing the exposure on every frame restarts the integration on some bodies,
     // which costs a frame each time in live mode. The camera keeps the value, so only
     // write it when it differs from what we last sent.
-    wxLongLong const tSetupStart = wxGetUTCTimeUSec();
-
     if (duration != m_curExposure)
     {
         ret = SetQHYCCDParam(m_camhandle, CONTROL_EXPOSURE, duration * 1000.0); // QHY duration is usec
@@ -1218,7 +1187,6 @@ bool Camera_QHY::Capture(usImage& img, const CaptureParams& captureParams)
         }
     }
 
-    wxLongLong const tFetchStart = wxGetUTCTimeUSec();
     uint32_t w, h, bpp, channels;
 
     if (m_liveMode)
@@ -1235,14 +1203,7 @@ bool Camera_QHY::Capture(usImage& img, const CaptureParams& captureParams)
             ret = GetQHYCCDLiveFrame(m_camhandle, &w, &h, &bpp, &channels, RawBuffer);
             if (ret == QHYCCD_SUCCESS)
             {
-                static int s_n = 0;
-                if ((s_n++ % 20) == 0)
-                {
-                    wxLongLong const tNow = wxGetUTCTimeUSec();
-                    Debug.Write(wxString::Format("QHY frame timing: setup=%lld us fetch=%lld us\n",
-                                                 (tFetchStart - tSetupStart).GetValue(),
-                                                 (tNow - tFetchStart).GetValue()));
-                }
+
                 break;
             }
 # ifdef CAN_STOP_CAPTURE

@@ -3546,12 +3546,6 @@ wxSpinCtrl *MyFrame::MakeSpinCtrl(wxWindow *parent, wxWindowID id, const wxStrin
 {
     wxSpinCtrl *ctrl = new wxSpinCtrl(parent, id, value, pos, size, style, min, max, initial, name);
 
-    Debug.Write(wxString::Format(
-        "MakeSpinCtrl: parent=%s in=(%d,%d) hwnd=%p best=(%d,%d) min=(%d,%d) size=(%d,%d)\n",
-        parent->GetClassInfo() ? parent->GetClassInfo()->GetClassName() : wxT("?"), size.x, size.y, (void *) ctrl->GetHWND(),
-        ctrl->GetBestSize().x, ctrl->GetBestSize().y, ctrl->GetMinSize().x, ctrl->GetMinSize().y, ctrl->GetSize().x,
-        ctrl->GetSize().y));
-
     wxSize initsize(ctrl->GetSizeFromTextSize(size));
     AdjustSpinnerWidth(&initsize);
     // wx 3.2 implements this by measuring a temporary text control wrapped around
@@ -3562,11 +3556,6 @@ wxSpinCtrl *MyFrame::MakeSpinCtrl(wxWindow *parent, wxWindowID id, const wxStrin
     {
         ctrl->SetInitialSize(initsize);
     }
-    else
-    {
-        Debug.Write(wxString::Format("MakeSpinCtrl: GetSizeFromTextSize(%d,%d) returned (%d,%d), using the default size\n",
-                                     size.x, size.y, initsize.x, initsize.y));
-    }
 
     // A spin control added to a sizer needs a non-zero minimum, otherwise a best
     // size that collapses later leaves the sizer with nothing but its border (seen
@@ -3575,8 +3564,6 @@ wxSpinCtrl *MyFrame::MakeSpinCtrl(wxWindow *parent, wxWindowID id, const wxStrin
     wxSize const best = ctrl->GetBestSize();
     if (best.x > 0 && best.y > 0)
         ctrl->SetMinSize(wxSize(wxMax(best.x, initsize.x), wxMax(best.y, initsize.y)));
-    Debug.Write(wxString::Format("MakeSpinCtrl: final min=(%d,%d) size=(%d,%d)\n", ctrl->GetMinSize().x,
-                                 ctrl->GetMinSize().y, ctrl->GetSize().x, ctrl->GetSize().y));
     return ctrl;
 }
 
@@ -3590,11 +3577,6 @@ wxSpinCtrlDouble *MyFrame::MakeSpinCtrlDouble(wxWindow *parent, wxWindowID id, c
     if (initsize.x > 0 && initsize.y > 0)
     {
         ctrl->SetInitialSize(initsize);
-    }
-    else
-    {
-        Debug.Write(wxString::Format("MakeSpinCtrlDouble: GetSizeFromTextSize(%d,%d) returned (%d,%d), using the default size\n",
-                                     size.x, size.y, initsize.x, initsize.y));
     }
     wxSize const best = ctrl->GetBestSize();
     if (best.x > 0 && best.y > 0)
