@@ -322,7 +322,9 @@ void StatsWindow::UpdateFrameRate()
             // gets starved while frames arrive faster than the loop drains events, so the
             // row froze at high frame rates and only caught up when the loop stopped.
             // Flush just this update region.
-            m_grid2->GetGridWindow()->Update(); // the update region lives on the inner grid window
+            // the update region lives on the inner grid window
+            if (wxWindow *gridWin = m_grid2->GetGridWindow())
+                gridWin->Update();
         }
 
         // read once per process: the profile read itself is logged by the config layer

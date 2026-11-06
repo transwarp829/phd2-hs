@@ -111,6 +111,8 @@ public:
         MODE_DXDY,
     };
 
+    void InvalidateStaticLayer();
+
 private:
     static const int m_xSamplesPerDivision = 50;
     static const int m_yDivisions = 3;

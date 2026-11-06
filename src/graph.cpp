@@ -535,9 +535,16 @@ int GraphLogWindow::GetHeight() const
     return m_pClient->m_height;
 }
 
+void GraphLogClientWindow::InvalidateStaticLayer()
+{
+    m_bgKey.Clear();
+}
 void GraphLogWindow::SetHeight(int height)
 {
     m_pClient->m_height = height;
+    // the cached static layer carries the scale labels; do not rely on the key
+    // comparison alone to notice that the scale changed
+    m_pClient->InvalidateStaticLayer();
     UpdateHeightButtonLabel();
     pConfig->Global.SetInt("/graph/height", height);
 }
