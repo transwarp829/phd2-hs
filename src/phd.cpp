@@ -414,6 +414,7 @@ static void OpenLogs(bool rollover)
     Debug.InitDebugLog(debugEnabled, forceDebugOpen);
 
     Debug.Write(wxString::Format("PHD2 version %s %s execution with:\n", FULLVER, rollover ? "continues" : "begins"));
+    Debug.Write(wxString::Format("PHD2 build: %s %s\n", _T(__DATE__), _T(__TIME__)));
     Debug.Write(wxString::Format("   %s\n", GetOsDescription()));
 #if defined(__linux__)
     Debug.Write(wxString::Format("   %s\n", wxGetLinuxDistributionInfo().Description));

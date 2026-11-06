@@ -351,12 +351,12 @@ QHYCameraDlg::QHYCameraDlg() : wxDialog(wxGetApp().GetTopWindow(), wxID_ANY, wxE
 
     cameraOptionsSizer->Add(m_gainText, 0, wxALL, 5);
 
-    m_offsetSpinner = NewSpinnerInt(this, pFrame->GetTextExtent("999"),
+    m_offsetSpinner = NewSpinnerInt(this, wxSize(pFrame->GetTextExtent("999").x, -1),
                                     pConfig->Profile.GetInt(CONFIG_PATH_QHY_OFFSET, DEFAULT_OFFSET), 0, 1000, 1, wxEmptyString);
     AddTableEntryPair(this, optionsGrid, _("Offset"), m_offsetSpinner);
 
     m_usbTrafficSpinner =
-        NewSpinnerInt(this, pFrame->GetTextExtent("999"),
+        NewSpinnerInt(this, wxSize(pFrame->GetTextExtent("999").x, -1),
                       pConfig->Profile.GetInt(CONFIG_PATH_QHY_USBTRAFFIC, DEFAULT_USBTRAFFIC), 0, 1000, 1, wxEmptyString);
     AddTableEntryPair(this, optionsGrid, _("USB Traffic"), m_usbTrafficSpinner);
 
