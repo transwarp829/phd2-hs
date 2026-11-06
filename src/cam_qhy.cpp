@@ -1154,16 +1154,28 @@ bool Camera_QHY::Capture(usImage& img, const CaptureParams& captureParams)
     {
         // Free-running: the camera is already integrating, so there is nothing to
         // start and nothing to cancel - take whatever frame it has ready.
-# ifdef CAN_STOP_CAPTURE
-        if (WorkerThread::InterruptRequested())
-            return true;
-# endif
-        ret = GetQHYCCDLiveFrame(m_camhandle, &w, &h, &bpp, &channels, RawBuffer);
-        if (ret == QHYCCD_ERROR)
+        // GetQHYCCDLiveFrame reports QHYCCD_ERROR while no frame is ready, so poll
+        // it the way QHY's own samples do instead of treating the first miss as a
+        // failure. Give up only after a timeout generous enough for the exposure.
+        int const liveTimeoutMs = wxMax(5000, duration * 3 + 5000);
+        int waited = 0;
+        for (;;)
         {
-            Debug.Write(wxString::Format("QHY get live frame ret %d\n", (int) ret));
-            DisconnectWithAlert(_("QHY exposure failed"), NO_RECONNECT);
-            return true;
+            ret = GetQHYCCDLiveFrame(m_camhandle, &w, &h, &bpp, &channels, RawBuffer);
+            if (ret == QHYCCD_SUCCESS)
+                break;
+# ifdef CAN_STOP_CAPTURE
+            if (WorkerThread::InterruptRequested())
+                return true;
+# endif
+            if (waited >= liveTimeoutMs)
+            {
+                Debug.Write(wxString::Format("QHY get live frame ret %d after %d ms\n", (int) ret, waited));
+                DisconnectWithAlert(_("QHY exposure failed"), NO_RECONNECT);
+                return true;
+            }
+            WorkerThread::MilliSleep(2);
+            waited += 2;
         }
     }
     else
