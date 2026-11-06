@@ -456,6 +456,20 @@ void Camera_QHY::ShowPropertyDialog()
 
         dlg.DoLayoutAdaptation();
 
+        // One-shot layout dump: the Offset/USB traffic spinners have been reported
+        // missing on one machine, and a zero or off-dialog rect says why.
+        {
+            wxSize const dsz = dlg.GetClientSize();
+            wxRect const ro = dlg.m_offsetSpinner->GetRect();
+            wxRect const rt = dlg.m_usbTrafficSpinner->GetRect();
+            Debug.Write(wxString::Format(
+                "QHY dialog: %dx%d | offset rect=(%d,%d %dx%d) shown=%d enabled=%d has=%d | usbtraffic rect=(%d,%d %dx%d) shown=%d enabled=%d has=%d\n",
+                dsz.x, dsz.y, ro.x, ro.y, ro.width, ro.height, dlg.m_offsetSpinner->IsShownOnScreen() ? 1 : 0,
+                dlg.m_offsetSpinner->IsEnabled() ? 1 : 0, m_hasOffset ? 1 : 0, rt.x, rt.y, rt.width, rt.height,
+                dlg.m_usbTrafficSpinner->IsShownOnScreen() ? 1 : 0, dlg.m_usbTrafficSpinner->IsEnabled() ? 1 : 0,
+                m_hasUsbTraffic ? 1 : 0));
+        }
+
         if (dlg.ShowModal() == wxID_OK)
         {
             bool bit8value = dlg.m_bpp8->GetValue();
