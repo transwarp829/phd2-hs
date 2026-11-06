@@ -577,8 +577,10 @@ bool PhdApp::OnInit()
     OpenLogs(false /* not for rollover */);
 
     logger.Close(); // writes any deferrred error messages to the debug log
+    Debug.Write("PhdApp: early logger closed\n");
 
 #if defined(__WINDOWS__)
+    Debug.Write("PhdApp: calling CoInitializeEx\n");
     HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
     Debug.Write(wxString::Format("CoInitializeEx returns %x\n", hr));
 #endif
