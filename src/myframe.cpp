@@ -3561,14 +3561,22 @@ wxSpinCtrl *MyFrame::MakeSpinCtrl(wxWindow *parent, wxWindowID id, const wxStrin
     if (initsize.x > 0 && initsize.y > 0)
     {
         ctrl->SetInitialSize(initsize);
-        Debug.Write(wxString::Format("MakeSpinCtrl: applied (%d,%d) -> size=(%d,%d)\n", initsize.x, initsize.y,
-                                     ctrl->GetSize().x, ctrl->GetSize().y));
     }
     else
     {
         Debug.Write(wxString::Format("MakeSpinCtrl: GetSizeFromTextSize(%d,%d) returned (%d,%d), using the default size\n",
                                      size.x, size.y, initsize.x, initsize.y));
     }
+
+    // A spin control added to a sizer needs a non-zero minimum, otherwise a best
+    // size that collapses later leaves the sizer with nothing but its border (seen
+    // on one machine: the control is created 54x25 and laid out at 0x0). Freeze the
+    // best size we can measure right now as the minimum.
+    wxSize const best = ctrl->GetBestSize();
+    if (best.x > 0 && best.y > 0)
+        ctrl->SetMinSize(wxSize(wxMax(best.x, initsize.x), wxMax(best.y, initsize.y)));
+    Debug.Write(wxString::Format("MakeSpinCtrl: final min=(%d,%d) size=(%d,%d)\n", ctrl->GetMinSize().x,
+                                 ctrl->GetMinSize().y, ctrl->GetSize().x, ctrl->GetSize().y));
     return ctrl;
 }
 
@@ -3588,6 +3596,9 @@ wxSpinCtrlDouble *MyFrame::MakeSpinCtrlDouble(wxWindow *parent, wxWindowID id, c
         Debug.Write(wxString::Format("MakeSpinCtrlDouble: GetSizeFromTextSize(%d,%d) returned (%d,%d), using the default size\n",
                                      size.x, size.y, initsize.x, initsize.y));
     }
+    wxSize const best = ctrl->GetBestSize();
+    if (best.x > 0 && best.y > 0)
+        ctrl->SetMinSize(wxSize(wxMax(best.x, initsize.x), wxMax(best.y, initsize.y)));
     return ctrl;
 }
 
