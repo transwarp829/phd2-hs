@@ -3547,7 +3547,19 @@ wxSpinCtrl *MyFrame::MakeSpinCtrl(wxWindow *parent, wxWindowID id, const wxStrin
     wxSpinCtrl *ctrl = new wxSpinCtrl(parent, id, value, pos, size, style, min, max, initial, name);
     wxSize initsize(ctrl->GetSizeFromTextSize(size));
     AdjustSpinnerWidth(&initsize);
-    ctrl->SetInitialSize(initsize);
+    // wx 3.2 implements this by measuring a temporary text control wrapped around
+    // the spin control's buddy HWND; when that measurement fails it returns (0,0)
+    // and SetInitialSize then pins the control (and the sizer) to zero, which makes
+    // the control vanish. Keep wx's own best size in that case.
+    if (initsize.x > 0 && initsize.y > 0)
+    {
+        ctrl->SetInitialSize(initsize);
+    }
+    else
+    {
+        Debug.Write(wxString::Format("MakeSpinCtrl: GetSizeFromTextSize(%d,%d) returned (%d,%d), using the default size\n",
+                                     size.x, size.y, initsize.x, initsize.y));
+    }
     return ctrl;
 }
 
@@ -3558,7 +3570,15 @@ wxSpinCtrlDouble *MyFrame::MakeSpinCtrlDouble(wxWindow *parent, wxWindowID id, c
     wxSpinCtrlDouble *ctrl = new wxSpinCtrlDouble(parent, id, value, pos, size, style, min, max, initial, inc, name);
     wxSize initsize(ctrl->GetSizeFromTextSize(size));
     AdjustSpinnerWidth(&initsize);
-    ctrl->SetInitialSize(initsize);
+    if (initsize.x > 0 && initsize.y > 0)
+    {
+        ctrl->SetInitialSize(initsize);
+    }
+    else
+    {
+        Debug.Write(wxString::Format("MakeSpinCtrlDouble: GetSizeFromTextSize(%d,%d) returned (%d,%d), using the default size\n",
+                                     size.x, size.y, initsize.x, initsize.y));
+    }
     return ctrl;
 }
 
