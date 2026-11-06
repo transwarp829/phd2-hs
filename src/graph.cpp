@@ -768,7 +768,7 @@ wxEND_EVENT_TABLE();
 
 GraphLogClientWindow::GraphLogClientWindow(wxWindow *parent)
     : wxWindow(parent, wxID_ANY, wxDefaultPosition, wxSize(401, 200), wxFULL_REPAINT_ON_RESIZE), m_line1(0), m_line2(0),
-      m_backBuffer(0)
+      m_backBuffer(0), m_bgBitmap(0)
 {
     SetBackgroundStyle(wxBG_STYLE_PAINT);
 
@@ -819,6 +819,7 @@ GraphLogClientWindow::~GraphLogClientWindow()
     delete[] m_line1;
     delete[] m_line2;
     delete m_backBuffer;
+    delete m_bgBitmap;
 }
 
 static void reset_trend_accums(TrendLineAccum accums[4])
@@ -1317,79 +1318,107 @@ void GraphLogClientWindow::OnPaint(wxPaintEvent& WXUNUSED(evt))
         units = UNIT_PIXELS;
     }
 
-    dc.SetBackground(*wxBLACK_BRUSH);
-    dc.Clear();
-    gptimer.t2 = wxGetUTCTimeUSec();
-
-    wxPen GreyDashPen(wxColour(200, 200, 200), 1, wxPENSTYLE_SHORT_DASH);
-
-    // Draw axes
-    dc.SetPen(*wxGREY_PEN);
-    dc.DrawLine(center.x, topEdge, center.x, bottomEdge);
-    dc.DrawLine(leftEdge, center.y, rightEdge, center.y);
-
-    // draw a box around the client area
-    dc.DrawLine(leftEdge, topEdge, rightEdge, topEdge);
-    dc.DrawLine(rightEdge, topEdge, rightEdge, bottomEdge);
-    dc.DrawLine(rightEdge, bottomEdge, leftEdge, bottomEdge);
-    dc.DrawLine(leftEdge, bottomEdge, leftEdge, topEdge);
-
-    // Draw horiz rule (scale is 1 pixel error per 25 pixels) + scale labels
-    dc.SetPen(GreyDashPen);
-    dc.SetTextForeground(*wxLIGHT_GREY);
-    const wxFont& SmallFont =
-#if defined(__WXOSX__)
-        *wxSMALL_FONT;
-#else
-        *wxSWISS_FONT;
-#endif
-    dc.SetFont(SmallFont);
-
-    for (int i = 1; i <= m_yDivisions; i++)
+    // The static layer - black fill, axes, box, dashed rules and their labels - only
+    // changes when the geometry or the scale does, so keep it in its own bitmap and
+    // start every frame from a copy of it. Per step only the traces are drawn.
+    wxString const staticKey = wxString::Format("%d,%d,%g,%d,%u,%d", size.x, size.y, m_height,
+                                                (int) units, m_length, (int) m_xSamplesPerDivision);
+    if (!m_bgBitmap || m_bgKey != staticKey)
     {
-        double div_y = center.y - i * yPixelsPerDivision;
-        dc.DrawLine(leftEdge, div_y, rightEdge, div_y);
-        dc.DrawText(wxString::Format("%g%s", i * (double) m_height / (m_yDivisions + 1),
-                                     units == UNIT_ARCSEC ? "''" : (i == 3 ? " px" : "")),
-                    leftEdge + 3, div_y - 13);
+        if (!m_bgBitmap || m_bgBitmap->GetSize() != size)
+        {
+            delete m_bgBitmap;
+            m_bgBitmap = new wxBitmap(size.x, size.y);
+        }
+        wxMemoryDC bgdc;
+        bgdc.SelectObject(*m_bgBitmap);
 
-        div_y = center.y + i * yPixelsPerDivision;
-        dc.DrawLine(leftEdge, div_y, rightEdge, div_y);
-        dc.DrawText(wxString::Format("%g%s", -i * (double) m_height / (m_yDivisions + 1), units == UNIT_ARCSEC ? "''" : ""),
-                    leftEdge + 3, div_y - 13);
+        bgdc.SetBackground(*wxBLACK_BRUSH);
+        bgdc.Clear();
+
+        wxPen GreyDashPen(wxColour(200, 200, 200), 1, wxPENSTYLE_SHORT_DASH);
+
+        // Draw axes
+        bgdc.SetPen(*wxGREY_PEN);
+        bgdc.DrawLine(center.x, topEdge, center.x, bottomEdge);
+        bgdc.DrawLine(leftEdge, center.y, rightEdge, center.y);
+
+        // draw a box around the client area
+        bgdc.DrawLine(leftEdge, topEdge, rightEdge, topEdge);
+        bgdc.DrawLine(rightEdge, topEdge, rightEdge, bottomEdge);
+        bgdc.DrawLine(rightEdge, bottomEdge, leftEdge, bottomEdge);
+        bgdc.DrawLine(leftEdge, bottomEdge, leftEdge, topEdge);
+
+        // Draw horiz rule (scale is 1 pixel error per 25 pixels) + scale labels
+        bgdc.SetPen(GreyDashPen);
+        bgdc.SetTextForeground(*wxLIGHT_GREY);
+        const wxFont& SmallFont =
+    #if defined(__WXOSX__)
+            *wxSMALL_FONT;
+    #else
+            *wxSWISS_FONT;
+    #endif
+        bgdc.SetFont(SmallFont);
+
+        for (int i = 1; i <= m_yDivisions; i++)
+        {
+            double div_y = center.y - i * yPixelsPerDivision;
+            bgdc.DrawLine(leftEdge, div_y, rightEdge, div_y);
+            bgdc.DrawText(wxString::Format("%g%s", i * (double) m_height / (m_yDivisions + 1),
+                                         units == UNIT_ARCSEC ? "''" : (i == 3 ? " px" : "")),
+                        leftEdge + 3, div_y - 13);
+
+            div_y = center.y + i * yPixelsPerDivision;
+            bgdc.DrawLine(leftEdge, div_y, rightEdge, div_y);
+            bgdc.DrawText(wxString::Format("%g%s", -i * (double) m_height / (m_yDivisions + 1), units == UNIT_ARCSEC ? "''" : ""),
+                        leftEdge + 3, div_y - 13);
+        }
+
+        for (int i = 1; i <= xDivisions; i++)
+        {
+            bgdc.DrawLine(center.x - i * xPixelsPerDivision, topEdge, center.x - i * xPixelsPerDivision, bottomEdge);
+            bgdc.DrawLine(center.x + i * xPixelsPerDivision, topEdge, center.x + i * xPixelsPerDivision, bottomEdge);
+        }
+
+
+        if (m_showCorrections && !(pMount && pMount->IsStepGuider()))
+        {
+            wxString lblN(_("GuideNorth"));
+            wxString lblE(_("GuideEast"));
+            static wxSize szN, szE;
+            bgdc.SetFont(wxFont(wxFontInfo(8)));
+            if (szN.x == 0)
+            {
+                szN = bgdc.GetTextExtent(lblN);
+                szE = bgdc.GetTextExtent(lblE);
+            }
+            bgdc.SetTextForeground(m_decOrDyColor.ChangeLightness(75));
+            bgdc.DrawText(lblN, rightEdge - szN.GetWidth() - 4, topEdge + 2);
+            bgdc.SetTextForeground(m_raOrDxColor.ChangeLightness(75));
+            bgdc.DrawText(lblE, rightEdge - szE.GetWidth() - 4, bottomEdge - szE.GetHeight() - 2);
+            bgdc.SetTextForeground(*wxLIGHT_GREY);
+            bgdc.SetFont(SmallFont);
+        }
+
+
+
+        bgdc.SelectObject(wxNullBitmap);
+        m_bgKey = staticKey;
     }
 
-    for (int i = 1; i <= xDivisions; i++)
-    {
-        dc.DrawLine(center.x - i * xPixelsPerDivision, topEdge, center.x - i * xPixelsPerDivision, bottomEdge);
-        dc.DrawLine(center.x + i * xPixelsPerDivision, topEdge, center.x + i * xPixelsPerDivision, bottomEdge);
-    }
-
+    // plot scaling: used by the traces below, independent of the cached layer
     const double xmag = size.x / (double) m_length;
     const double ymag =
         yPixelsPerDivision * (double) (m_yDivisions + 1) / (double) m_height * (units == UNIT_ARCSEC ? sampling : 1.0);
 
     ScaleAndTranslate sctr(xorig, yorig, xmag, ymag);
-
-    if (m_showCorrections && !(pMount && pMount->IsStepGuider()))
     {
-        wxString lblN(_("GuideNorth"));
-        wxString lblE(_("GuideEast"));
-        static wxSize szN, szE;
-        dc.SetFont(wxFont(wxFontInfo(8)));
-        if (szN.x == 0)
-        {
-            szN = dc.GetTextExtent(lblN);
-            szE = dc.GetTextExtent(lblE);
-        }
-        dc.SetTextForeground(m_decOrDyColor.ChangeLightness(75));
-        dc.DrawText(lblN, rightEdge - szN.GetWidth() - 4, topEdge + 2);
-        dc.SetTextForeground(m_raOrDxColor.ChangeLightness(75));
-        dc.DrawText(lblE, rightEdge - szE.GetWidth() - 4, bottomEdge - szE.GetHeight() - 2);
-        dc.SetTextForeground(*wxLIGHT_GREY);
-        dc.SetFont(SmallFont);
+        wxMemoryDC bgdc;
+        bgdc.SelectObject(*m_bgBitmap);
+        dc.Blit(0, 0, size.x, size.y, &bgdc, 0, 0);
+        bgdc.SelectObject(wxNullBitmap);
     }
-
+    gptimer.t2 = wxGetUTCTimeUSec();
     gptimer.t3 = wxGetUTCTimeUSec();
 
     // Draw data

@@ -133,6 +133,8 @@ private:
     wxPoint *m_line1;
     wxPoint *m_line2;
     wxBitmap *m_backBuffer; // reused client-sized off-screen bitmap
+    wxBitmap *m_bgBitmap;   // cached static layer (axes, grid, labels)
+    wxString m_bgKey;       // parameters the cached layer was drawn for
 
     TrendLineAccum m_trendLineAccum[4]; // dx, dy, ra, dec
     int m_raSameSides; // accumulator for RA osc index
