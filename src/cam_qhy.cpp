@@ -49,6 +49,9 @@
 # define CONFIG_PATH_QHY_OFFSET "/camera/QHY/offset"
 # define CONFIG_PATH_QHY_HIGHGAIN "/camera/QHY/highgain"
 # define CONFIG_PATH_QHY_USBTRAFFIC "/camera/QHY/usbtraffic"
+// live (free-running) mode: SetQHYCCDStreamMode(handle, 1) before InitQHYCCD.
+// Off by default - it is a different capture path, so upstream stays the default.
+# define CONFIG_PATH_QHY_LIVEMODE "/camera/QHY/LiveMode"
 # define CONFIG_PATH_QHY_SPEEDMODE "/camera/QHY/speedmode"
 
 # define DEFAULT_BPP 16
@@ -81,6 +84,8 @@ class Camera_QHY : public GuideCamera
     double m_usbTrafficMax;
     double m_usbTrafficStep;
     bool m_hasUsbTraffic;
+    bool m_liveMode;      // stream mode 1: free-running, GetQHYCCDLiveFrame
+    bool m_liveStreaming; // BeginQHYCCDLive succeeded and has not been ended
 
     char m_camId[CAMERA_ID_LENGTH] = "";
     double m_devicePixelSize;
@@ -310,6 +315,7 @@ struct QHYCameraDlg : public wxDialog
     wxCheckBox *m_ampnrCb;
     wxCheckBox *m_rownrCb;
     wxCheckBox *m_speedModeCb;
+    wxCheckBox *m_liveModeCb;
     wxCheckBox *m_highGainCb;
 
     QHYCameraDlg();
@@ -370,6 +376,10 @@ QHYCameraDlg::QHYCameraDlg() : wxDialog(wxGetApp().GetTopWindow(), wxID_ANY, wxE
         _("Sets a QHY5III178 or QHY178 to operate the sensor in the high conversion gain mode. This usually means lower noise "
           "and a shallower pixel well than the equivalent gain value in low conversion gain mode"));
     cameraOptionsSizer->Add(m_highGainCb, 0, wxALL, 5);
+
+    m_liveModeCb = new wxCheckBox(this, wxID_ANY, _("Live mode (free running)"));
+    m_liveModeCb->SetToolTip(_("SetQHYCCDStreamMode(1): the camera free-runs and frames are taken with GetQHYCCDLiveFrame instead of one exposure per request. Faster, but the exposure then overlaps whatever the mount is doing. Needs a reconnect."));
+    cameraOptionsSizer->Add(m_liveModeCb, 0, wxALL, 5);
 
     cameraParamsSizer->Add(cameraOptionsSizer, 1, wxEXPAND, 5);
 
@@ -442,6 +452,8 @@ void Camera_QHY::ShowPropertyDialog()
         if (!m_hasHighGain)
             dlg.m_highGainCb->Hide();
 
+        dlg.m_liveModeCb->SetValue(m_liveMode);
+
         dlg.DoLayoutAdaptation();
 
         if (dlg.ShowModal() == wxID_OK)
@@ -471,6 +483,14 @@ void Camera_QHY::ShowPropertyDialog()
 
             m_highGain = dlg.m_highGainCb->GetValue();
             pConfig->Profile.SetBoolean(CONFIG_PATH_QHY_HIGHGAIN, m_highGain);
+
+            bool const live = dlg.m_liveModeCb->GetValue();
+            if (live != m_liveMode)
+            {
+                m_liveMode = live;
+                pConfig->Profile.SetBoolean(CONFIG_PATH_QHY_LIVEMODE, m_liveMode);
+                reconnect = true;
+            }
 
             m_settingsChanged = true;
         }
@@ -622,7 +642,11 @@ bool Camera_QHY::Connect(const wxString& camId)
     // before calling InitQHYCCD() we must call SetQHYCCDStreamMode(camhandle, 0 or 1)
     //   0: single frame mode
     //   1: live frame mode
-    uint32_t ret = SetQHYCCDStreamMode(m_camhandle, 0);
+    m_liveMode = pConfig->Profile.GetBoolean(CONFIG_PATH_QHY_LIVEMODE, false);
+    m_liveStreaming = false;
+    uint32_t ret = SetQHYCCDStreamMode(m_camhandle, m_liveMode ? 1 : 0);
+    Debug.Write(wxString::Format("QHY: stream mode = %d (%s)\n", m_liveMode ? 1 : 0,
+                                 m_liveMode ? "live" : "single frame"));
     if (ret != QHYCCD_SUCCESS)
     {
         CloseQHYCCD(m_camhandle);
@@ -863,6 +887,22 @@ bool Camera_QHY::Connect(const wxString& camId)
         return CamConnectFailed(_("Init camera failed"));
     }
 
+    if (m_liveMode)
+    {
+        ret = BeginQHYCCDLive(m_camhandle);
+        if (ret != QHYCCD_SUCCESS)
+        {
+            // The stream mode is latched at init time, so there is no way back to
+            // single frame without a fresh InitQHYCCD: fail loudly and name the key.
+            Debug.Write(wxString::Format("QHY: BeginQHYCCDLive failed with status %u\n", (unsigned) ret));
+            CloseQHYCCD(m_camhandle);
+            m_camhandle = 0;
+            return CamConnectFailed(_("Failed to start live mode - clear /camera/QHY/LiveMode to use single frame mode"));
+        }
+        m_liveStreaming = true;
+        Debug.Write(wxString::Format("QHY: live mode started\n"));
+    }
+
     Debug.Write(wxString::Format("QHY: connect done\n"));
     Connected = true;
     return false;
@@ -877,7 +917,16 @@ static void StopCapture(qhyccd_handle *handle)
 
 bool Camera_QHY::Disconnect()
 {
-    StopCapture(m_camhandle);
+    if (m_liveStreaming)
+    {
+        uint32_t ret = StopQHYCCDLive(m_camhandle);
+        Debug.Write(wxString::Format("QHY: StopQHYCCDLive ret %u\n", (unsigned) ret));
+        m_liveStreaming = false;
+    }
+    else
+    {
+        StopCapture(m_camhandle);
+    }
 # if !defined(__APPLE__)
     // this crashes on macOS, but seems to work ok without it
     CloseQHYCCD(m_camhandle);
@@ -987,6 +1036,11 @@ bool Camera_QHY::Capture(usImage& img, const CaptureParams& captureParams)
     if (m_roi != roi)
     {
         // when roi changes, must call this
+        if (m_liveStreaming)
+        {
+            StopQHYCCDLive(m_camhandle);
+            m_liveStreaming = false;
+        }
         ret = CancelQHYCCDExposingAndReadout(m_camhandle);
         if (ret == QHYCCD_SUCCESS)
         {
@@ -1001,6 +1055,12 @@ bool Camera_QHY::Capture(usImage& img, const CaptureParams& captureParams)
         if (ret == QHYCCD_SUCCESS)
         {
             m_roi = roi;
+            if (m_liveMode)
+            {
+                uint32_t bret = BeginQHYCCDLive(m_camhandle);
+                m_liveStreaming = (bret == QHYCCD_SUCCESS);
+                Debug.Write(wxString::Format("QHY: restart live after ROI change ret %u\n", (unsigned) bret));
+            }
         }
         else
         {
@@ -1088,45 +1148,65 @@ bool Camera_QHY::Capture(usImage& img, const CaptureParams& captureParams)
         pFrame->Alert(_("Failed to set camera exposure length"));
     }
 
-    ret = ExpQHYCCDSingleFrame(m_camhandle);
-    if (ret == QHYCCD_ERROR)
-    {
-        Debug.Write(wxString::Format("QHY exp single frame ret %d\n", (int) ret));
-        DisconnectWithAlert(_("QHY exposure failed"), NO_RECONNECT);
-        return true;
-    }
-# ifdef CAN_STOP_CAPTURE
-    if (WorkerThread::InterruptRequested())
-    {
-        StopCapture(m_camhandle);
-        return true;
-    }
-# endif
+    uint32_t w, h, bpp, channels;
 
-    /*
-     * Guidance regarding exposure handling. From QHY, October 2024
-     *
-     * The return code of ExpQHYCCDSingleFrame() must be considered with the exposure length
-     * to determine when to call GetQHYCCDSingleFrame().
-     *
-     * If return code == QHYCCD_READ_DIRECTLY && exposure duration < 3s, call GetQHYCCDSingleFrame() immediately.
-     * If return code == QHYCCD_READ_DIRECTLY && exposure duration >= 3s, call GetQHYCCDSingleFrame() after 2s.
-     * If return code != QHYCCD_READ_DIRECTLY, call GetQHYCCDSingleFrame() at the end of the exposure duration.
-     */
-    if (ret == QHYCCD_READ_DIRECTLY)
+    if (m_liveMode)
     {
-        if (duration >= 3000)
+        // Free-running: the camera is already integrating, so there is nothing to
+        // start and nothing to cancel - take whatever frame it has ready.
+# ifdef CAN_STOP_CAPTURE
+        if (WorkerThread::InterruptRequested())
+            return true;
+# endif
+        ret = GetQHYCCDLiveFrame(m_camhandle, &w, &h, &bpp, &channels, RawBuffer);
+        if (ret == QHYCCD_ERROR)
         {
-            WorkerThread::MilliSleep(2000);
+            Debug.Write(wxString::Format("QHY get live frame ret %d\n", (int) ret));
+            DisconnectWithAlert(_("QHY exposure failed"), NO_RECONNECT);
+            return true;
         }
     }
     else
     {
-        WorkerThread::MilliSleep(duration);
-    }
+        ret = ExpQHYCCDSingleFrame(m_camhandle);
+        if (ret == QHYCCD_ERROR)
+        {
+            Debug.Write(wxString::Format("QHY exp single frame ret %d\n", (int) ret));
+            DisconnectWithAlert(_("QHY exposure failed"), NO_RECONNECT);
+            return true;
+        }
+    # ifdef CAN_STOP_CAPTURE
+        if (WorkerThread::InterruptRequested())
+        {
+            StopCapture(m_camhandle);
+            return true;
+        }
+    # endif
 
-    uint32_t w, h, bpp, channels;
-    ret = GetQHYCCDSingleFrame(m_camhandle, &w, &h, &bpp, &channels, RawBuffer);
+        /*
+         * Guidance regarding exposure handling. From QHY, October 2024
+         *
+         * The return code of ExpQHYCCDSingleFrame() must be considered with the exposure length
+         * to determine when to call GetQHYCCDSingleFrame().
+         *
+         * If return code == QHYCCD_READ_DIRECTLY && exposure duration < 3s, call GetQHYCCDSingleFrame() immediately.
+         * If return code == QHYCCD_READ_DIRECTLY && exposure duration >= 3s, call GetQHYCCDSingleFrame() after 2s.
+         * If return code != QHYCCD_READ_DIRECTLY, call GetQHYCCDSingleFrame() at the end of the exposure duration.
+         */
+        if (ret == QHYCCD_READ_DIRECTLY)
+        {
+            if (duration >= 3000)
+            {
+                WorkerThread::MilliSleep(2000);
+            }
+        }
+        else
+        {
+            WorkerThread::MilliSleep(duration);
+        }
+
+        ret = GetQHYCCDSingleFrame(m_camhandle, &w, &h, &bpp, &channels, RawBuffer);
+    }
     if (ret != QHYCCD_SUCCESS || (bpp != 8 && bpp != 16))
     {
         Debug.Write(wxString::Format("QHY get single frame ret %d bpp %u\n", ret, bpp));
