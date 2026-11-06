@@ -85,6 +85,8 @@ class Camera_QHY : public GuideCamera
     double m_usbTrafficStep;
     bool m_hasUsbTraffic;
     bool m_liveMode;      // stream mode 1: free-running, GetQHYCCDLiveFrame
+    double m_curExposure; // last exposure written to the camera, -1 = unknown
+    int m_curBinMode;     // last binning written to the camera, -1 = unknown
     bool m_liveStreaming; // BeginQHYCCDLive succeeded and has not been ended
 
     char m_camId[CAMERA_ID_LENGTH] = "";
@@ -225,6 +227,10 @@ Camera_QHY::Camera_QHY()
     HasBayer = false;
     HasSubframes = true;
     m_camhandle = 0;
+
+    m_liveMode = false;
+    m_curExposure = -1;
+    m_curBinMode = -1;
 
     m_curBin = 1;
     m_devicePixelSize = 0;
@@ -1071,11 +1077,17 @@ bool Camera_QHY::Capture(usImage& img, const CaptureParams& captureParams)
     }
 
     uint32_t ret = QHYCCD_ERROR;
-    // lzr from QHY says this needs to be set for every exposure
-    ret = SetQHYCCDBinMode(m_camhandle, HwBinning, HwBinning);
-    if (ret != QHYCCD_SUCCESS)
+    // lzr from QHY says this needs to be set for every exposure. That advice is for
+    // the single-frame path; in live mode there is no per-exposure reconfiguration,
+    // and re-issuing it while streaming may restart the sensor readout, so only send
+    // it when the binning actually changes.
+    if (!m_liveMode || HwBinning != m_curBinMode)
     {
-        Debug.Write(wxString::Format("SetQHYCCDBinMode failed! ret = %d\n", (int) ret));
+        ret = SetQHYCCDBinMode(m_camhandle, HwBinning, HwBinning);
+        if (ret != QHYCCD_SUCCESS)
+            Debug.Write(wxString::Format("SetQHYCCDBinMode failed! ret = %d\n", (int) ret));
+        else
+            m_curBinMode = HwBinning;
     }
 
     if (m_roi != roi)
@@ -1100,6 +1112,7 @@ bool Camera_QHY::Capture(usImage& img, const CaptureParams& captureParams)
         if (ret == QHYCCD_SUCCESS)
         {
             m_roi = roi;
+            m_curExposure = -1; // the reconfiguration drops it
             if (m_liveMode)
             {
                 uint32_t bret = BeginQHYCCDLive(m_camhandle);
@@ -1186,13 +1199,26 @@ bool Camera_QHY::Capture(usImage& img, const CaptureParams& captureParams)
         m_settingsChanged = false;
     }
 
-    ret = SetQHYCCDParam(m_camhandle, CONTROL_EXPOSURE, duration * 1000.0); // QHY duration is usec
-    if (ret == QHYCCD_ERROR)
+    // Writing the exposure on every frame restarts the integration on some bodies,
+    // which costs a frame each time in live mode. The camera keeps the value, so only
+    // write it when it differs from what we last sent.
+    wxLongLong const tSetupStart = wxGetUTCTimeUSec();
+
+    if (duration != m_curExposure)
     {
-        Debug.Write(wxString::Format("QHY set exposure ret %d\n", (int) ret));
-        pFrame->Alert(_("Failed to set camera exposure length"));
+        ret = SetQHYCCDParam(m_camhandle, CONTROL_EXPOSURE, duration * 1000.0); // QHY duration is usec
+        if (ret == QHYCCD_ERROR)
+        {
+            Debug.Write(wxString::Format("QHY set exposure ret %d\n", (int) ret));
+            pFrame->Alert(_("Failed to set camera exposure length"));
+        }
+        else
+        {
+            m_curExposure = duration;
+        }
     }
 
+    wxLongLong const tFetchStart = wxGetUTCTimeUSec();
     uint32_t w, h, bpp, channels;
 
     if (m_liveMode)
@@ -1208,7 +1234,17 @@ bool Camera_QHY::Capture(usImage& img, const CaptureParams& captureParams)
         {
             ret = GetQHYCCDLiveFrame(m_camhandle, &w, &h, &bpp, &channels, RawBuffer);
             if (ret == QHYCCD_SUCCESS)
+            {
+                static int s_n = 0;
+                if ((s_n++ % 20) == 0)
+                {
+                    wxLongLong const tNow = wxGetUTCTimeUSec();
+                    Debug.Write(wxString::Format("QHY frame timing: setup=%lld us fetch=%lld us\n",
+                                                 (tFetchStart - tSetupStart).GetValue(),
+                                                 (tNow - tFetchStart).GetValue()));
+                }
                 break;
+            }
 # ifdef CAN_STOP_CAPTURE
             if (WorkerThread::InterruptRequested())
                 return true;
