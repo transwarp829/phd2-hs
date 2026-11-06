@@ -341,8 +341,11 @@ QHYCameraDlg::QHYCameraDlg() : wxDialog(wxGetApp().GetTopWindow(), wxID_ANY, wxE
 
     cameraParamsSizer->Add(cameraModeSizer, 0, wxEXPAND, 5);
 
-    wxStaticBoxSizer *cameraOptionsSizer =
-        new wxStaticBoxSizer(new wxStaticBox(this, wxID_ANY, _("Camera Options")), wxVERTICAL);
+    // Three-argument form: the sizer owns the static box and reparents the controls
+    // added to it. With the two-argument form (an externally created wxStaticBox) the
+    // children stay parented to the dialog, and under wx 3.2 the composite wxSpinCtrl
+    // then reports a zero best size and is laid out with no area at all.
+    wxStaticBoxSizer *cameraOptionsSizer = new wxStaticBoxSizer(wxVERTICAL, this, _("Camera Options"));
     wxFlexGridSizer *optionsGrid = new wxFlexGridSizer(2, 5, 5);
 
     m_gainText = new wxStaticText(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0);
