@@ -2,8 +2,8 @@
 
 基于上游 `dev`（版本号仍为 2.6.14）的本地分支 `perf/zwo-video-stats`。
 
-**导星算法、脉冲调度没有改动。** 变化集中在三处：显示路径、工具窗口、相机驱动的传输参数。
-相机部分 ZWO 的默认值与上游一致；ToupTek 默认走最快路径，三项都可在相机属性对话框里单独回退。
+**导星算法、脉冲调度没有改动。** 变化集中在四处：显示路径、工具窗口、相机驱动的传输参数、
+配置读取的容错。相机部分 ZWO 的默认值与上游一致；ToupTek 默认走最快路径，各项都可在相机属性对话框里单独回退。
 
 ## 显示与帧率
 
@@ -13,17 +13,31 @@
   `Guider::OnErase` 不再 `Skip()`。这一项随窗口面积线性增长，120 DPI 高分屏上尤其明显（`009b6e7`）
 - 图像**缩小时**可选单遍渲染：直接按目标分辨率做 box 采样并在路上套 LUT，跳过整帧
   `CopyToImage` + `Rescale`；放大仍走 wx 的双线性，避免小图马赛克（`/Display/FusedRender`，默认 0；`0eabfae`）
-- 曲线窗口：只重绘绘图区、去掉它自己那层缓冲、网格笔从 `wxPENSTYLE_DOT` 换成 `wxPENSTYLE_SHORT_DASH`
-  （GDI 逐像素画点线，单次重绘 38 → 17 ms）（`7c59138`、`3fdc68c`）
 - `timeBeginPeriod(1)`：1 ms 系统定时器，去掉相机轮询被 15.6 ms 量化的问题
   （Windows 专用，`CMakeLists.txt` 链接 `winmm`）（`adfcace`）
 - `usImage::CalcStats` 从采集 worker 移到显示侧，不再占用「图像进内存 → 脉冲发出」的关键路径；
   `StatsValid` 防止重复计算（`adfcace`）
 - 每帧路径上的 profile 读取改为启动时缓存（`LoadProfileSettings`），否则每帧一次注册表查询并写一行日志（`c2433bc`）
 
+## 曲线窗口（History）与散点图（Target）
+
+- 曲线窗口：只重绘绘图区、去掉它自己那层缓冲、网格笔从 `wxPENSTYLE_DOT` 换成 `wxPENSTYLE_SHORT_DASH`
+  （GDI 逐像素画点线，单次重绘 38 → 17 ms）（`7c59138`、`3fdc68c`）
+- 再进一步：**静态层缓存**。黑底、十字轴、边框、虚线网格和刻度文字只取决于尺寸和量程，存进自己的位图；
+  每步只把静态层拷进工作位图、再画轨迹，最后一次 blit 上屏。2407×254 的绘制从 20 ms 降到 **1 ms**，
+  并且因为只有一次可见操作，闪烁一并消失（`82552d0`、`eeb1643`）。轨迹本身仍要整幅重画——
+  新样本会让所有点左移一格
+- y 轴量程换档时标尺数字跟着变（`a238b85`）。此前缓存 key 用 `%g` 格式化一个 `unsigned int`，
+  varargs 读到的是从未压栈的 double，key 永远不变、静态层永不重建
+- 散点图（Target，AO 位置）同样改为复用一张离屏位图，去掉 `wxAutoBufferedPaintDC` 每帧新分配
+  （`a238b85`）。它的静态部分只是几个圆和刻度线，不值得再拆静态层
+
 ## 状态窗口
 
 - 新增「帧率」一行：0.8/0.2 的 EMA，间隔超过 1 s 视为暂停不计入（`dee9e83`）
+- 该行在帧率高时会停在旧值：`wxGrid::SetCellValue` 只是把单元格标脏，真正重绘要等一次 `WM_PAINT`，
+  而它是最低优先级的消息，帧间隔小于一次消息循环的处理时间时就被饿死，停止采集后才追上。
+  现在文字真正变化时主动 flush 内部 grid 窗口的更新区域（`4917287`）
 - 停止采集时重置 EMA（`338f419`）；无数据时该单元格留空而不是显示占位串（`c9e5848`）
 
 ## 界面（升级到 wx 3.2 后的兼容问题）
@@ -32,8 +46,12 @@
   text 控件去量字，量不出来时返回 0×0，而 `SetInitialSize(0,0)` 会把控件的最小尺寸钉成零，
   sizer 于是给它零面积——QHY 设置对话框里的 Offset / USB Traffic 数字框就是这样消失的
   （对话框本身尺寸正常，宽度是最长的复选框标签撑出来的，容易误判成整体塌陷）。
-  现在只有尺寸为正时才应用，退化时保留 wx 自身的最佳尺寸并打一行日志
-  （`70a507d`；`dc350b3` 是定位用的矩形诊断）
+  现在只在尺寸为正时才应用，退化时保留 wx 自身的最佳尺寸（`70a507d`）
+- QHY 的“Camera Options”分组改用三参数 `wxStaticBoxSizer(orient, parent, label)`：两参数形式
+  （外部创建 `wxStaticBox`）不会把控件 reparent 进 box，在 wx 3.2 下复合 `wxSpinCtrl` 会因此报零最佳尺寸
+  （`a7c6db0`）
+- QHY 对话框在 `ShowModal()` 之前重新钉一次数字框的最小尺寸并再次 `Fit()`：它的最小尺寸会被后续的
+  `SetRange`/`SetValue` 清掉，而构造函数里的 `Fit()` 又早于这些赋值（`aac9599`、`5380d98`）
 - 语言：PHD2 把 `wxLanguage` 的**原始枚举值**存进 `HKCU\Software\StarkLabs\PHDGuidingV2\wxLanguage`，
   这个枚举在 wx 3.0.5 与 3.2 之间重新编号过（46 从「简体中文」变成「阿拉伯语」）。阿拉伯语带
   `wxLayout_RightToLeft`，MSW 会给每个顶层窗口加 `WS_EX_LAYOUTRTL`，界面整个镜像、文字从右到左。
@@ -49,8 +67,7 @@
 - 修掉同一函数里的 use-after-free：绘制时读取 `CurrentImage()`，而那指针由采集线程持有、下一帧到达时
   会被 delete，崩溃表现为 wx 回调里的 `0xc000041d`（`7dd19ce`）
 - 该窗口的 `wxAutoBufferedPaintDC` 去掉——本来每次就是全量重绘，缓冲只多拷一遍（`7dd19ce`）
-- 探针（`/Display/PaintTiming=1` 时输出）：十字位置、渲染后质心、两者差值。探针自身有成本
-  （每帧 `ConvertToImage` + 扫 326×326），测量时它也是负载的一部分
+
 
 ## 相机
 
@@ -69,11 +86,13 @@
 - 连接时 `SetQHYCCDStreamMode(handle, 1)`（必须在 `InitQHYCCD` 之前），初始化完成后 `BeginQHYCCDLive()`；
   取帧改为 `GetQHYCCDLiveFrame()`，跳过 `ExpQHYCCDSingleFrame` 和它那套按返回码决定的等待；
   断开或 ROI 变化时 `StopQHYCCDLive()`（ROI 改完再重新 Begin）（`b5611b0`）
+- `GetQHYCCDLiveFrame` 在帧还没准备好时返回 `QHYCCD_ERROR`(-1)。第一版把它当致命错误直接断开；
+  现在按 QHY 示例的做法轮询，超时 `max(5 s, 3×曝光+5 s)` 才判定失败（`ee06884`）
+- **每帧重复的 SDK 调用**是最大的单笔开销：`SetQHYCCDBinMode` 和 `SetQHYCCDParam(CONTROL_EXPOSURE)`
+  原本每帧都调，而在 live 模式下重写曝光会让 SDK 重启积分。改成「值变了才写」之后，
+  5III585M 在 3856×2180 / 8-bit / 10 ms 下从 **102 ms 降到 29 ms（34.5 fps）**（`b43c32a`）
 - 流模式在 init 时锁定，所以 `BeginQHYCCDLive` 失败无法就地回落：会关闭设备并让连接失败，
   提示里写明要清的键名（`/camera/QHY/LiveMode`）
-- **没有 QHY 相机可测**，代码是照 SDK 头文件写的。默认关闭，所以不影响任何人；启用后从日志确认
-  `QHY: stream mode = 1 (live)` 和 `QHY: live mode started`，再和单帧模式比较同曝光同 ROI 下的帧周期
-
 - 顺带修掉上游一个类型不匹配：`/camera/QHY/usbtraffic` 用 `SetInt` 写入（wx 存成 REG_DWORD），
   对话框却用 `GetDouble` 读（基类按字符串读），于是第二次打开时 wx 报
   `registry value ... is not text (but of type DWORD)`，值被退回默认的 30。改成 `GetInt`（`9c0c175`）
@@ -91,14 +110,29 @@
 连接时日志会打印 `Toupcam_get_ExpTimeRange`，用来确认该机型在视频模式下有没有曝光上限——
 AE676M 实测两种模式都是 100 us .. 1000 s，2 s 曝光在视频模式下真的跑满 2001 ms（`5c72ff1`）。
 
-取帧改用 `Toupcam_PullImageV3` 以便拿到 `ToupcamFrameInfoV3`，诊断开关
-`/camera/ToupTek/FrameTiming` 会逐帧打印 `seq` 步进与时间戳增量（`4d16e84`）。
+取帧改用 `Toupcam_PullImageV3`，因为旧接口不返回帧信息；需要时可以从 `ToupcamFrameInfoV3` 的 `seq`
+看出丢帧（`4d16e84`）。
 
 ### 共用
 
 - `usImage::CalcStats` 用已有直方图取 `FiltMin/FiltMax`，去掉整帧 `Median3` 和第二趟扫描；
   `MinADU/MaxADU/MedianADU` 不变（8.3 MP 下 90 → 10 ms）（`c0a5454`）
 - 模拟器传感器尺寸可配置：`/SimCam/width`、`/SimCam/height`（默认 752x580）（`4a1129e`）
+
+## 配置读取
+
+- wx 的注册表后端**存值带类型、读值认类型**：`SetInt` 写 REG_DWORD 而 `GetString` 拒读，`SetString`
+  写 REG_SZ 而 `GetInt` 拒读，两边都只报一句 `is not text` / `is not numeric` 然后返回默认值。
+  旧版本写的、手改的、跨平台带过来的 profile 都会踩到，逐键打补丁打不完
+- 于是把 `ConfigSection` 的五个访问器改成**类型无关**：先按原生类型读，失败再按另一种形式读并转换，
+  两次尝试都包在 `wxLogNull` 里。任何键、任何存储形式都能读出来，警告不会再出现（`c79c645`）
+
+## 日志
+
+- 默认内容与上游一致，只多一行 `PHD2 build: <时间戳>`；时间戳取自 **exe 的修改时间**，而不是
+  `__DATE__/__TIME__`——后者只在这个源文件被重编时才变，增量构建时多个版本会报同一个时间（`24d6564`）
+- 全部临时探针（重绘分段、曲线窗口、星点图质心、ToupTek 帧序号、启动期锚点）验证完成后已移除；
+  需要时从 git 历史取回
 
 ## 实测
 
@@ -123,12 +157,34 @@ AE676M 实测两种模式都是 100 us .. 1000 s，2 s 曝光在视频模式下�
 | 100 ms | 124 ms | 8.1 fps | 7% |
 | 1000 ms | 1024 ms | 1 fps | 0.9% |
 
+### QHY 5III585M：3856x2180，8-bit，10 ms 曝光
+
+| 状态 | 周期 | fps |
+|---|---|---|
+| live 模式，每帧重写曝光 | 102 ms | 9.8 |
+| live 模式，值变了才写 | **29 ms** | **34.5** |
+
+### 导星环路（真实导星，2024 步的会话）
+
+按曝光周期配对 9715 次，从曝光中心量到驱动被调用：
+
+| 阶段 | 中位 |
+|---|---|
+| 读出完成 → 星点+算法算完 | **2 ms** |
+| 算法决定 → 驱动被调用（`MoveAxis`） | **0-1 ms** |
+| 相机读出 | 1-17 ms |
+| 曝光中心 → 驱动调用（10 ms 曝光） | 24 ms |
+
+导星日志侧：回路周期中位 **198 ms**（5.1 fps），RA 脉冲中位 15 ms、DEC 17 ms（只占周期 8-12%），
+`|RA 误差|` 中位 0.44 px。修正与误差增量的滞后相关在 `lag=1` 最强（−0.40）并逐级衰减，
+即修正在**下一帧**就体现出来——这是串行环的物理下限。
+
 ### 模拟器：1920x1080，16-bit，10 ms，GUIDING 状态（中位数）
 
 | 条件 | 周期 | 组成 |
 |---|---|---|
 | `frame_download_ms=50`（模拟器默认） | ~100 ms（10 fps） | 假下载 50 + 应用侧 ~40 |
-| `frame_download_ms=0` | **59 ms（17 fps）** | 模拟器成像 28、导星脉冲 24、重绘 12、星点+算法 9（含探针） |
+| `frame_download_ms=0` | **59 ms（17 fps）** | 模拟器成像 28、导星脉冲 24、重绘 12、星点+算法 9 |
 
 模拟器是快照渲染（`FillImage` 不含积分），所以它既不能复现拖线，也不能复现「脉冲落进曝光窗口」的偏差；
 这两件事只能在真实星点上验证。
@@ -141,4 +197,7 @@ AE676M 实测两种模式都是 100 us .. 1000 s，2 s 曝光在视频模式下�
   改 ROI 会 `StopCapture()` 重启流，所以不能每帧动
 - `ToupcamFrameInfoV3.timestamp` 不能当帧龄用：每帧只前进 18.1 ms 而墙钟过 34 ms，且随 `seq` 步进成倍数，
   它统计的是曝光时间而非时钟
-- 显示部分仍有约 12 ms（图像重绘），打开曲线窗口时另有约 17 ms
+- 显示部分仍有约 12 ms（图像重绘）；曲线窗口已降到约 1 ms
+- **调试日志每行都 flush，保留期却是 30 天**。一天的重度导星可以写到 59 MB，追加写入这么大的文件时
+  可能被文件系统/杀毒卡住——表现是进程活着、主窗口不出现、第二次启动提示「已在运行」。
+  换一个新日志文件即可恢复；要根治需要按大小轮转，目前没做
