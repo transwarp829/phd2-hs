@@ -56,20 +56,11 @@ bool Logger::ChangeDirLog(const wxString& newdir)
 static wxString DefaultDir()
 {
     wxStandardPathsBase& stdpath = wxStandardPaths::Get();
-    Debug.Write("Logger: resolving the default log directory\n");
-    wxString const docs = stdpath.GetDocumentsDir();
-    Debug.Write(wxString::Format("Logger: documents dir = [%s]\n", docs));
-    wxString rslt = docs + PATHSEPSTR + "PHD2";
-    Debug.Write(wxString::Format("Logger: probing [%s]\n", rslt));
+    wxString rslt = stdpath.GetDocumentsDir() + PATHSEPSTR + "PHD2";
 
     if (!wxDirExists(rslt))
-    {
-        Debug.Write("Logger: does not exist, creating\n");
         if (!wxFileName::Mkdir(rslt, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL))
-            rslt = docs; // should never happen
-        Debug.Write("Logger: create step done\n");
-    }
-    Debug.Write(wxString::Format("Logger: using [%s]\n", rslt));
+            rslt = stdpath.GetDocumentsDir(); // should never happen
 
     return rslt;
 }

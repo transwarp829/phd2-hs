@@ -414,8 +414,15 @@ static void OpenLogs(bool rollover)
     Debug.InitDebugLog(debugEnabled, forceDebugOpen);
 
     Debug.Write(wxString::Format("PHD2 version %s %s execution with:\n", FULLVER, rollover ? "continues" : "begins"));
-    Debug.Write(wxString::Format("PHD2 build: %s %s\n", _T(__DATE__), _T(__TIME__)));
-    Debug.Write(wxString::Format("   %s\n", GetOsDescription()));
+    // The binary's timestamp rather than __DATE__/__TIME__: those only change when
+    // this file is recompiled, so an incremental build reported the time of the last
+    // full-ish build and could not be used to tell builds apart on a remote machine.
+    {
+        wxFileName const exePath(wxStandardPaths::Get().GetExecutablePath());
+        wxDateTime const built = exePath.GetModificationTime();
+        Debug.Write(wxString::Format("PHD2 build: %s\n",
+                                     built.IsValid() ? built.Format("%Y-%m-%d %H:%M:%S") : wxString("unknown")));
+    }    Debug.Write(wxString::Format("   %s\n", GetOsDescription()));
 #if defined(__linux__)
     Debug.Write(wxString::Format("   %s\n", wxGetLinuxDistributionInfo().Description));
 #endif
@@ -577,10 +584,8 @@ bool PhdApp::OnInit()
     OpenLogs(false /* not for rollover */);
 
     logger.Close(); // writes any deferrred error messages to the debug log
-    Debug.Write("PhdApp: early logger closed\n");
 
 #if defined(__WINDOWS__)
-    Debug.Write("PhdApp: calling CoInitializeEx\n");
     HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
     Debug.Write(wxString::Format("CoInitializeEx returns %x\n", hr));
 #endif
