@@ -767,7 +767,8 @@ wxEND_EVENT_TABLE();
 // clang-format on
 
 GraphLogClientWindow::GraphLogClientWindow(wxWindow *parent)
-    : wxWindow(parent, wxID_ANY, wxDefaultPosition, wxSize(401, 200), wxFULL_REPAINT_ON_RESIZE), m_line1(0), m_line2(0)
+    : wxWindow(parent, wxID_ANY, wxDefaultPosition, wxSize(401, 200), wxFULL_REPAINT_ON_RESIZE), m_line1(0), m_line2(0),
+      m_backBuffer(0)
 {
     SetBackgroundStyle(wxBG_STYLE_PAINT);
 
@@ -817,6 +818,7 @@ GraphLogClientWindow::~GraphLogClientWindow()
 {
     delete[] m_line1;
     delete[] m_line2;
+    delete m_backBuffer;
 }
 
 static void reset_trend_accums(TrendLineAccum accums[4])
@@ -1276,12 +1278,22 @@ void GraphLogClientWindow::OnPaint(wxPaintEvent& WXUNUSED(evt))
 {
     GraphPaintTimer gptimer(this);
 
-    // the whole client area is filled by dc.Clear() below, so the extra
-    // client-area bitmap of the buffered DC is pure cost here
-    wxPaintDC dc(this);
-    gptimer.t1 = wxGetUTCTimeUSec();
-
     wxSize size(GetClientSize());
+    if (size.x <= 0 || size.y <= 0)
+        return;
+
+    // Draw the whole scene off-screen and blit it in one go. wxAutoBufferedPaintDC was
+    // expensive because it allocated a client-sized bitmap on every paint; one cached
+    // bitmap leaves only the blit, and dc.Clear() can no longer flash the window black
+    // before the grid and traces are drawn over it.
+    if (!m_backBuffer || m_backBuffer->GetSize() != size)
+    {
+        delete m_backBuffer;
+        m_backBuffer = new wxBitmap(size.x, size.y);
+    }
+    wxMemoryDC dc;
+    dc.SelectObject(*m_backBuffer);
+    gptimer.t1 = wxGetUTCTimeUSec();
     wxSize center(size.x / 2, size.y / 2);
 
     const int leftEdge = 0;
@@ -1606,6 +1618,10 @@ void GraphLogClientWindow::OnPaint(wxPaintEvent& WXUNUSED(evt))
     }
 
     gptimer.t4 = wxGetUTCTimeUSec();
+
+    wxPaintDC screen(this);
+    screen.Blit(0, 0, size.x, size.y, &dc, 0, 0);
+    dc.SelectObject(wxNullBitmap);
 }
 
 void GraphLogClientWindow::OnLeftBtnDown(wxMouseEvent& evt)
