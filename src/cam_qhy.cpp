@@ -316,6 +316,7 @@ struct QHYCameraDlg : public wxDialog
     wxCheckBox *m_rownrCb;
     wxCheckBox *m_speedModeCb;
     wxCheckBox *m_liveModeCb;
+wxFlexGridSizer *m_optionsGrid;
     wxCheckBox *m_highGainCb;
 
     QHYCameraDlg();
@@ -351,6 +352,7 @@ QHYCameraDlg::QHYCameraDlg() : wxDialog(wxGetApp().GetTopWindow(), wxID_ANY, wxE
 
     cameraOptionsSizer->Add(m_gainText, 0, wxALL, 5);
 
+    m_optionsGrid = optionsGrid;
     m_offsetSpinner = NewSpinnerInt(this, wxDefaultSize,
                                     pConfig->Profile.GetInt(CONFIG_PATH_QHY_OFFSET, DEFAULT_OFFSET), 0, 1000, 1, wxEmptyString);
     AddTableEntryPair(this, optionsGrid, _("Offset"), m_offsetSpinner);
@@ -462,6 +464,19 @@ void Camera_QHY::ShowPropertyDialog()
             wxSize const dsz = dlg.GetClientSize();
             wxRect const ro = dlg.m_offsetSpinner->GetRect();
             wxRect const rt = dlg.m_usbTrafficSpinner->GetRect();
+            // dump the grid that holds the two rows: if the labels collapsed too,
+            // the grid itself is getting no space and the spinners are innocent
+            Debug.Write(wxString::Format("QHY grid: size=(%d,%d) items=%d\n", dlg.m_optionsGrid->GetSize().x,
+                                         dlg.m_optionsGrid->GetSize().y, (int) dlg.m_optionsGrid->GetItemCount()));
+            for (size_t i = 0; i < dlg.m_optionsGrid->GetItemCount(); ++i)
+            {
+                wxSizerItem *it = dlg.m_optionsGrid->GetItem(i);
+                wxWindow *w = it->GetWindow();
+                Debug.Write(wxString::Format("QHY grid item %d: %s item=(%d,%d) win=(%d,%d) shown=%d\n", (int) i,
+                                             w && w->GetClassInfo() ? w->GetClassInfo()->GetClassName() : wxT("?"),
+                                             it->GetSize().x, it->GetSize().y, w ? w->GetSize().x : -1,
+                                             w ? w->GetSize().y : -1, w ? (w->IsShown() ? 1 : 0) : -1));
+            }
             Debug.Write(wxString::Format(
                 "QHY dialog: %dx%d | offset rect=(%d,%d %dx%d) shown=%d enabled=%d has=%d | usbtraffic rect=(%d,%d %dx%d) shown=%d enabled=%d has=%d\n",
                 dsz.x, dsz.y, ro.x, ro.y, ro.width, ro.height, dlg.m_offsetSpinner->IsShownOnScreen() ? 1 : 0,
