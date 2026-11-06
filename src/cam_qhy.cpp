@@ -470,6 +470,9 @@ void Camera_QHY::ShowPropertyDialog()
         dlg.m_offsetSpinner->InvalidateBestSize();
         dlg.m_usbTrafficSpinner->InvalidateBestSize();
         dlg.Layout();
+        // the constructor Fit() ran before any of the SetRange/checkbox values were
+        // applied, so re-fit now that the content has its final size
+        dlg.Fit();
 
         // One-shot layout dump: the Offset/USB traffic spinners have been reported
         // missing on one machine, and a zero or off-dialog rect says why.
