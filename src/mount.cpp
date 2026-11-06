@@ -1789,7 +1789,7 @@ void Mount::LoadCalibrationDetails(CalibrationDetails *details) const
     details->orthoError = pConfig->Profile.GetDouble(prefix + "ortho_error", 0.0);
     details->raStepCount = pConfig->Profile.GetInt(prefix + "ra_step_count", 0);
     details->decStepCount = pConfig->Profile.GetInt(prefix + "dec_step_count", 0);
-    details->origBinning = pConfig->Profile.GetIntLoose(prefix + "orig_binning", 1);
+    details->origBinning = pConfig->Profile.GetInt(prefix + "orig_binning", 1);
     details->lastIssue = (CalibrationIssueType) pConfig->Profile.GetInt(prefix + "last_issue", 0);
     details->origTimestamp = pConfig->Profile.GetString(prefix + "orig_timestamp", "Unknown");
     details->origPierSide = pier_side(pConfig->Profile.GetInt(prefix + "orig_pierside", PIER_SIDE_UNKNOWN));

@@ -55,6 +55,33 @@ void ConfigSection::SelectProfile(int profileId)
     m_prefix = wxString::Format("/profile/%d", profileId);
 }
 
+// wxConfig stores every value with a type, and each reader insists on it: a value
+// written by SetInt is a REG_DWORD and Read(wxString*) refuses it, one written by
+// SetString is a REG_SZ and Read(long*) refuses it. Profiles written by another
+// version, or edited by hand, therefore produce "is not text" / "is not numeric"
+// warnings and silently fall back to the default value. None of these accessors has
+// any business caring which form a number was stored in, so try both, with the log
+// suppressed for the attempt that does not apply.
+static bool ReadLooseString(wxConfig *cfg, const wxString &path, wxString *out)
+{
+    wxString str;
+    {
+        wxLogNull noLog;
+        if (cfg->Read(path, &str)) { *out = str; return true; }
+    }
+    long l;
+    {
+        wxLogNull noLog;
+        if (cfg->Read(path, &l)) { *out = wxString::Format("%ld", l); return true; }
+    }
+    double d;
+    {
+        wxLogNull noLog;
+        if (cfg->Read(path, &d)) { *out = wxString::Format("%.17g", d); return true; }
+    }
+    return false;
+}
+
 bool ConfigSection::GetBoolean(const wxString& name, bool defaultValue)
 {
     bool bReturn = defaultValue;
@@ -62,11 +89,23 @@ bool ConfigSection::GetBoolean(const wxString& name, bool defaultValue)
 
     if (m_pConfig)
     {
-        m_pConfig->Read(path, &bReturn, defaultValue);
+        bool ok;
+        {
+            wxLogNull noLog;
+            ok = m_pConfig->Read(path, &bReturn, defaultValue);
+        }
+        if (!ok)
+        {
+            wxString str;
+            if (ReadLooseString(m_pConfig, path, &str))
+            {
+                long l;
+                bReturn = str.ToLong(&l) ? l != 0 : (str.CmpNoCase("true") == 0);
+            }
+        }
     }
 
     Debug.Write(wxString::Format("GetBoolean(\"%s\", %d) returns %d\n", path, defaultValue, bReturn));
-
     return bReturn;
 }
 
@@ -77,11 +116,20 @@ wxString ConfigSection::GetString(const wxString& name, const wxString& defaultV
 
     if (m_pConfig)
     {
-        m_pConfig->Read(path, &sReturn, defaultValue);
+        bool ok;
+        {
+            wxLogNull noLog;
+            ok = m_pConfig->Read(path, &sReturn, defaultValue);
+        }
+        if (!ok)
+        {
+            wxString str;
+            if (ReadLooseString(m_pConfig, path, &str))
+                sReturn = str;
+        }
     }
 
     Debug.Write(wxString::Format("GetString(\"%s\", \"%s\") returns \"%s\"\n", path, defaultValue, sReturn));
-
     return sReturn;
 }
 
@@ -92,11 +140,20 @@ double ConfigSection::GetDouble(const wxString& name, double defaultValue)
 
     if (m_pConfig)
     {
-        m_pConfig->Read(path, &dReturn, defaultValue);
+        bool ok;
+        {
+            wxLogNull noLog;
+            ok = m_pConfig->Read(path, &dReturn, defaultValue);
+        }
+        if (!ok)
+        {
+            wxString str;
+            if (ReadLooseString(m_pConfig, path, &str))
+                str.ToCDouble(&dReturn);
+        }
     }
 
     Debug.Write(wxString::Format("GetDouble(\"%s\", %f) returns %f\n", path, defaultValue, dReturn));
-
     return dReturn;
 }
 
@@ -107,52 +164,26 @@ long ConfigSection::GetLong(const wxString& name, long defaultValue)
 
     if (m_pConfig)
     {
-        m_pConfig->Read(path, &lReturn, defaultValue);
-    }
-
-    Debug.Write(wxString::Format("GetLong(\"%s\", %ld) returns %ld\n", path, defaultValue, lReturn));
-
-    return lReturn;
-}
-
-int ConfigSection::GetIntLoose(const wxString& name, int defaultValue)
-{
-    long lReturn = defaultValue;
-    wxString path = m_prefix + name;
-
-    if (m_pConfig && !m_pConfig->Read(path, &lReturn))
-    {
-        // Stored as text, which wxRegConfig refuses to read as a number (it logs
-        // "is not numeric (but of type SZ)" and returns false). Parse it and rewrite
-        // the numeric form so the message appears at most once per stale value.
-        wxString str;
-        if (m_pConfig->Read(path, &str))
+        bool ok;
         {
-            long parsed;
-            if (str.ToLong(&parsed))
-            {
-                lReturn = parsed;
-                m_pConfig->Write(path, parsed);
-            }
+            wxLogNull noLog;
+            ok = m_pConfig->Read(path, &lReturn, defaultValue);
+        }
+        if (!ok)
+        {
+            wxString str;
+            if (ReadLooseString(m_pConfig, path, &str))
+                str.ToLong(&lReturn);
         }
     }
 
-    Debug.Write(wxString::Format("GetIntLoose(\"%s\", %d) returns %d\n", path, defaultValue, (int) lReturn));
-    return (int) lReturn;
+    Debug.Write(wxString::Format("GetLong(\"%s\", %ld) returns %ld\n", path, defaultValue, lReturn));
+    return lReturn;
 }
+
 int ConfigSection::GetInt(const wxString& name, int defaultValue)
 {
-    long lReturn = defaultValue;
-    wxString path = m_prefix + name;
-
-    if (m_pConfig)
-    {
-        m_pConfig->Read(path, &lReturn, defaultValue);
-    }
-
-    Debug.Write(wxString::Format("GetInt(\"%s\", %d) returns %d\n", path, defaultValue, (int) lReturn));
-
-    return (int) lReturn;
+    return (int) GetLong(name, defaultValue);
 }
 
 void ConfigSection::SetBoolean(const wxString& name, bool value)
