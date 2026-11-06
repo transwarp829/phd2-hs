@@ -26,6 +26,18 @@
 - 新增「帧率」一行：0.8/0.2 的 EMA，间隔超过 1 s 视为暂停不计入（`dee9e83`）
 - 停止采集时重置 EMA（`338f419`）；无数据时该单元格留空而不是显示占位串（`c9e5848`）
 
+## 界面（升级到 wx 3.2 后的兼容问题）
+
+- `MakeSpinCtrl` 把 `GetSizeFromTextSize()` 的结果交给 `SetInitialSize()`。wx 3.2 的实现会临时包一个
+  text 控件去量字，量不出来时返回 0×0，而 `SetInitialSize(0,0)` 会把控件的最小尺寸钉成零，
+  sizer 于是给它零面积——QHY 设置对话框里的 Offset / USB Traffic 数字框就是这样整个消失的，
+  连对话框一起塌到 187x226。现在只有尺寸为正时才应用，退化时保留 wx 自身的最佳尺寸并打一行日志
+  （`70a507d`；`dc350b3` 是定位用的矩形诊断）
+- 语言：PHD2 把 `wxLanguage` 的**原始枚举值**存进 `HKCU\Software\StarkLabs\PHDGuidingV2\wxLanguage`，
+  这个枚举在 wx 3.0.5 与 3.2 之间重新编号过（46 从「简体中文」变成「阿拉伯语」）。阿拉伯语带
+  `wxLayout_RightToLeft`，MSW 会给每个顶层窗口加 `WS_EX_LAYOUTRTL`，界面整个镜像、文字从右到左。
+  把它置 0（跟随系统）即可，无需重编译；0 在两版里含义相同，所以双版本共存的机器只能用 0
+
 ## 星点图（Tools > Star Profile）
 
 - 放大视图改为从**原始帧**裁剪，与 `CurrentPosition()` 共用图像坐标。原来从缩放过的
