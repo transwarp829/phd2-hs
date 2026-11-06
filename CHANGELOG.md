@@ -49,6 +49,18 @@
   （默认关 = 上游的 snap 模式）（`c0a5454`、`4c002b7`）。`ASI_BANDWIDTHOVERLOAD` 上游钉在最小值且没有控件，
   而 QHY 的同类旋钮（`USB Traffic`）一直是可见的
 
+### QHY
+
+相机属性对话框新增 **Live mode (free running)** 勾选框（默认**关** = 上游的单帧模式，需重连生效）：
+
+- 连接时 `SetQHYCCDStreamMode(handle, 1)`（必须在 `InitQHYCCD` 之前），初始化完成后 `BeginQHYCCDLive()`；
+  取帧改为 `GetQHYCCDLiveFrame()`，跳过 `ExpQHYCCDSingleFrame` 和它那套按返回码决定的等待；
+  断开或 ROI 变化时 `StopQHYCCDLive()`（ROI 改完再重新 Begin）（`b5611b0`）
+- 流模式在 init 时锁定，所以 `BeginQHYCCDLive` 失败无法就地回落：会关闭设备并让连接失败，
+  提示里写明要清的键名（`/camera/QHY/LiveMode`）
+- **没有 QHY 相机可测**，代码是照 SDK 头文件写的。默认关闭，所以不影响任何人；启用后从日志确认
+  `QHY: stream mode = 1 (live)` 和 `QHY: live mode started`，再和单帧模式比较同曝光同 ROI 下的帧周期
+
 ### ToupTek
 
 三个传输参数各自独立暴露在相机属性对话框里（都需重连生效），默认值都取最快：
