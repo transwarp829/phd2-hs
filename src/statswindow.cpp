@@ -313,9 +313,17 @@ void StatsWindow::UpdateFrameRate()
 
     if (pFrame->pGuider->FrameIntervalMs() > 0.0)
     {
-        m_grid2->SetCellValue(m_frameRateRow, 1,
-                              wxString::Format(" %5.1f fps (%.0f ms)", pFrame->pGuider->FrameRate(),
-                                               pFrame->pGuider->FrameIntervalMs()));
+        wxString const text = wxString::Format(" %5.1f fps (%.0f ms)", pFrame->pGuider->FrameRate(),
+                                               pFrame->pGuider->FrameIntervalMs());
+        if (m_grid2->GetCellValue(m_frameRateRow, 1) != text)
+        {
+            m_grid2->SetCellValue(m_frameRateRow, 1, text);
+            // wxGrid only queues a repaint; WM_PAINT is the lowest priority message and
+            // gets starved while frames arrive faster than the loop drains events, so the
+            // row froze at high frame rates and only caught up when the loop stopped.
+            // Flush just this update region.
+            m_grid2->GetGridWindow()->Update(); // the update region lives on the inner grid window
+        }
 
         // read once per process: the profile read itself is logged by the config layer
         static int s_timing = -1;
