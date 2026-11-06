@@ -85,6 +85,9 @@ public:
     double GetDouble(const wxString& name, double defaultValue);
     long GetLong(const wxString& name, long defaultValue);
     int GetInt(const wxString& name, int defaultValue);
+    // like GetInt(), but a value stored as text (older versions or hand edits) is
+    // parsed and rewritten as a number instead of being rejected by wxRegConfig
+    int GetIntLoose(const wxString& name, int defaultValue);
     wxRect GetRect(const wxString& name);
 
     void SetBoolean(const wxString& name, bool value);

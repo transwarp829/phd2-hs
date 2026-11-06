@@ -115,6 +115,31 @@ long ConfigSection::GetLong(const wxString& name, long defaultValue)
     return lReturn;
 }
 
+int ConfigSection::GetIntLoose(const wxString& name, int defaultValue)
+{
+    long lReturn = defaultValue;
+    wxString path = m_prefix + name;
+
+    if (m_pConfig && !m_pConfig->Read(path, &lReturn))
+    {
+        // Stored as text, which wxRegConfig refuses to read as a number (it logs
+        // "is not numeric (but of type SZ)" and returns false). Parse it and rewrite
+        // the numeric form so the message appears at most once per stale value.
+        wxString str;
+        if (m_pConfig->Read(path, &str))
+        {
+            long parsed;
+            if (str.ToLong(&parsed))
+            {
+                lReturn = parsed;
+                m_pConfig->Write(path, parsed);
+            }
+        }
+    }
+
+    Debug.Write(wxString::Format("GetIntLoose(\"%s\", %d) returns %d\n", path, defaultValue, (int) lReturn));
+    return (int) lReturn;
+}
 int ConfigSection::GetInt(const wxString& name, int defaultValue)
 {
     long lReturn = defaultValue;
