@@ -1328,7 +1328,7 @@ void GraphLogClientWindow::OnPaint(wxPaintEvent& WXUNUSED(evt))
     // The static layer - black fill, axes, box, dashed rules and their labels - only
     // changes when the geometry or the scale does, so keep it in its own bitmap and
     // start every frame from a copy of it. Per step only the traces are drawn.
-    wxString const staticKey = wxString::Format("%d,%d,%g,%d,%u,%d", size.x, size.y, m_height,
+    wxString const staticKey = wxString::Format("%d,%d,%d,%d,%u,%d", size.x, size.y, (int) m_height,
                                                 (int) units, m_length, (int) m_xSamplesPerDivision);
     if (!m_bgBitmap || m_bgKey != staticKey)
     {

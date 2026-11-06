@@ -58,6 +58,7 @@ class TargetClient : public wxWindow
     unsigned int m_length; // # of items to display
     double m_zoom;
     double m_refCircleRadius;
+    wxBitmap *m_backBuffer; // reused client-sized off-screen bitmap
 
     void AppendData(const GuideStepInfo& step);
 

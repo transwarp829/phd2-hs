@@ -236,6 +236,8 @@ wxEND_EVENT_TABLE();
 TargetClient::TargetClient(wxWindow *parent)
     : wxWindow(parent, wxID_ANY, wxDefaultPosition, wxSize(201, 201), wxFULL_REPAINT_ON_RESIZE)
 {
+    m_backBuffer = 0;
+
     SetBackgroundStyle(wxBG_STYLE_PAINT);
 
     m_minLength = 50;
@@ -249,7 +251,10 @@ TargetClient::TargetClient(wxWindow *parent)
         m_zoom = MIN_ZOOM;
 }
 
-TargetClient::~TargetClient(void) { }
+TargetClient::~TargetClient(void)
+{
+    delete m_backBuffer;
+}
 
 void TargetClient::AppendData(const GuideStepInfo& step)
 {
@@ -266,7 +271,18 @@ void TargetClient::AppendData(const GuideStepInfo& step)
 
 void TargetClient::OnPaint(wxPaintEvent& WXUNUSED(evt))
 {
-    wxAutoBufferedPaintDC dc(this);
+    // Reuse one client-sized bitmap instead of letting wxAutoBufferedPaintDC allocate a
+    // fresh one on every paint: the copy is cheap, the allocation is not.
+    wxSize const clientSize = GetClientSize();
+    if (clientSize.x <= 0 || clientSize.y <= 0)
+        return;
+    if (!m_backBuffer || m_backBuffer->GetSize() != clientSize)
+    {
+        delete m_backBuffer;
+        m_backBuffer = new wxBitmap(clientSize.x, clientSize.y);
+    }
+    wxMemoryDC dc;
+    dc.SelectObject(*m_backBuffer);
 
     dc.SetBackground(*wxBLACK_BRUSH);
     // dc.SetBackground(wxColour(10,0,0));
@@ -388,4 +404,7 @@ void TargetClient::OnPaint(wxPaintEvent& WXUNUSED(evt))
         else
             dc.DrawCircle(ximpact, yimpact, 1);
     }
+    wxPaintDC screen(this);
+    screen.Blit(0, 0, clientSize.x, clientSize.y, &dc, 0, 0);
+    dc.SelectObject(wxNullBitmap);
 }
