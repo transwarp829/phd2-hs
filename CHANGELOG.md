@@ -61,6 +61,10 @@
 - **没有 QHY 相机可测**，代码是照 SDK 头文件写的。默认关闭，所以不影响任何人；启用后从日志确认
   `QHY: stream mode = 1 (live)` 和 `QHY: live mode started`，再和单帧模式比较同曝光同 ROI 下的帧周期
 
+- 顺带修掉上游一个类型不匹配：`/camera/QHY/usbtraffic` 用 `SetInt` 写入（wx 存成 REG_DWORD），
+  对话框却用 `GetDouble` 读（基类按字符串读），于是第二次打开时 wx 报
+  `registry value ... is not text (but of type DWORD)`，值被退回默认的 30。改成 `GetInt`（`9c0c175`）
+
 ### ToupTek
 
 三个传输参数各自独立暴露在相机属性对话框里（都需重连生效），默认值都取最快：
