@@ -661,6 +661,14 @@ bool Camera_QHY::Connect(const wxString& camId)
     (void) strncpy(m_camId, qid.c_str(), sizeof(m_camId) - 1);
     m_camId[sizeof(m_camId) - 1] = '\0';
 
+    // A handle returned by OpenQHYCCD carries the camera's own defaults, so
+    // anything this object programmed over a previous connection no longer
+    // applies. Forget the cached values: otherwise the "write only when it
+    // changes" shortcut would skip the first write after a reconnect and the
+    // camera would keep integrating with the SDK's default exposure.
+    m_curExposure = -1;
+    m_curBinMode = -1;
+
     // before calling InitQHYCCD() we must call SetQHYCCDStreamMode(camhandle, 0 or 1)
     //   0: single frame mode
     //   1: live frame mode
@@ -1183,6 +1191,7 @@ bool Camera_QHY::Capture(usImage& img, const CaptureParams& captureParams)
         }
         else
         {
+            Debug.Write(wxString::Format("QHY: exposure set to %d ms\n", duration));
             m_curExposure = duration;
         }
     }
