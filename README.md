@@ -22,6 +22,16 @@ Detailed change log: [CHANGELOG.md](CHANGELOG.md) (Chinese). Build instructions 
 
 Status: experimental. Expect changes to be validated on real hardware; use at your own risk.
 
+### Regression tests and Chinese help
+
+Hardware-free capture and image-preview regression tests can be built separately
+from PHD2 and the vendor SDKs; see [tests/README.md](tests/README.md).
+
+Simplified Chinese in-app help is provided under [locale/zh_CN/help](locale/zh_CN/help),
+including the full manual and a [high-speed capture guide](locale/zh_CN/help/High_speed_capture.htm).
+The normal documentation build creates the `zh_CN` help archive automatically.
+Screenshots retain the original UI labels, with Chinese explanations in the text.
+
 ### Web site
 
   https://openphdguiding.org

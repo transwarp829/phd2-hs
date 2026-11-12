@@ -1,0 +1,351 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<!-- Encoding is supplied by Charset=utf-8 in the HHP. A META charset here makes wxHtmlHelpData convert the labels twice. -->
+<meta name="GENERATOR" content="Microsoft&reg; HTML Help Workshop 4.1">
+<!-- Sitemap 1.0 -->
+</HEAD><BODY>
+<OBJECT type="text/site properties">
+	<param name="ImageType" value="Folder">
+</OBJECT>
+<UL>
+<LI><OBJECT type="text/sitemap"><param name="Name" value="高速采集与低延迟"><param name="Local" value="High_speed_capture.htm"></OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="说明">
+		<param name="Local" value="Introduction.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="主界面">
+		<param name="Local" value="MainScreen.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="基本使用">
+		<param name="Local" value="Basic_use.htm">
+		</OBJECT>
+	<UL>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="连接设备">
+			<param name="Local" value="Basic_use.htm#Equipment_Connection">
+			</OBJECT>
+		<UL>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="选择相机">
+				<param name="Local" value="Basic_use.htm#Camera_Selection">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="选择赤道仪">
+				<param name="Local" value="Basic_use.htm#Mount_Selection">
+				<param name="URL" value="Basic_use.htm#Mount_Connection">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="辅助赤道仪连接">
+				<param name="Local" value="Basic_use.htm#Aux_mount_selection">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="ASCOM 的优势">
+				<param name="Local" value="Basic_use.htm#ASCOM_Benefits">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="自适应光学设备">
+				<param name="Local" value="Basic_use.htm#AO_Selection">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="旋转器">
+				<param name="Local" value="Basic_use.htm#Rotator_Selection">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="设备配置文件">
+				<param name="Local" value="Basic_use.htm#Equipment_Profile">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="新建配置向导">
+				<param name="Local" value="Basic_use.htm#New_profile_wizard">
+				</OBJECT>
+		</UL>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="设备配置文件">
+			<param name="Local" value="Basic_use.htm#Equipment_Profile">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="曝光时间与选星">
+			<param name="Local" value="Basic_use.htm#Exposure_Time_and_Star_Selection">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="标定">
+			<param name="Local" value="Basic_use.htm#Automatic_Calibration">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="导星">
+			<param name="Local" value="Basic_use.htm#Guiding">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="暗场与坏像素图">
+			<param name="Local" value="Darks_BadPixel_Maps.htm">
+			</OBJECT>
+	</UL>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="监测工具">
+		<param name="Local" value="Visualization.htm">
+		</OBJECT>
+	<UL>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="叠加图层">
+			<param name="Local" value="Visualization.htm">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="导星性能曲线">
+			<param name="Local" value="Visualization.htm#Graphical_Display">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="星点轮廓显示">
+			<param name="Local" value="Visualization.htm#Star_Profile_and_Target_Displays">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="靶心图">
+			<param name="Local" value="Visualization.htm#Star_Profile_and_Target_Displays">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="自适应光学曲线">
+			<param name="Local" value="Visualization.htm#Adaptive_Optics_AO_Graph">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="可停靠窗口">
+			<param name="Local" value="Visualization.htm#DockableMoveable_Graphical_Windows">
+			</OBJECT>
+	</UL>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="高级设置">
+		<param name="Local" value="Advanced_settings.htm">
+		</OBJECT>
+	<UL>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="全局参数">
+			<param name="Local" value="Advanced_settings.htm#Global_Tab">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="导星参数">
+			<param name="Local" value="Advanced_settings.htm#Guiding_Tab">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="相机参数">
+			<param name="Local" value="Advanced_settings.htm#Camera_Tab">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="算法">
+			<param name="Local" value="Advanced_settings.htm#Algorithms_Tab">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="自适应光学参数">
+			<param name="Local" value="Advanced_settings.htm#Other_Devices_Tab">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="旋转器参数">
+			<param name="Local" value="Advanced_settings.htm#Other_Devices_Tab">
+			</OBJECT>
+	</UL>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="导星算法">
+		<param name="Local" value="Guide_algorithms.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="工具与实用功能">
+		<param name="Local" value="Tools.htm">
+		</OBJECT>
+	<UL>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="手动控制赤道仪">
+			<param name="Local" value="Tools.htm#Manual_Guide">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="自动选星">
+			<param name="Local" value="Tools.htm#Auto-Select_Star">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="标定详情">
+			<param name="Local" value="Tools.htm#Calibration_Details">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="服务器">
+			<param name="Local" value="Tools.htm#PHD2_Server">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="极轴对准工具">
+			<param name="Local" value="Tools.htm#Polar_alignment_tools">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="锁定位置">
+			<param name="Local" value="Tools.htm#Lock_Positions">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="彗星跟踪">
+			<param name="Local" value="Tools.htm#Comet_Tracking">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="标定助手">
+			<param name="Local" value="Tools.htm#Calibration_Assistant">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="导星助手">
+			<param name="Local" value="Tools.htm#Guiding_Assistant">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="星点十字测试工具">
+			<param name="Local" value="Tools.htm#Star_cross_tool">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="中天翻转标定工具">
+			<param name="Local" value="Tools.htm#pierflip_cal_tool">
+			</OBJECT>
+	</UL>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="故障排除及分析">
+		<param name="Local" value="Trouble_shooting.htm">
+		</OBJECT>
+	<UL>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="常规故障排除">
+			<param name="Local" value="Trouble_shooting.htm">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="导星星点大幅偏移">
+			<param name="Local" value="Trouble_shooting.htm#Problems-_Guide_star_deflections">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="相机超时与图像下载问题">
+			<param name="Local" value="Trouble_shooting.htm#Problems-_Camera_Timeouts">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="标定问题">
+			<param name="Local" value="Trouble_shooting.htm#Problems-_Mount_Control">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="测量赤道仪表现">
+			<param name="Local" value="Trouble_shooting.htm#Measuring_Mount_Behavior">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="丢星">
+			<param name="Local" value="Trouble_shooting.htm#Problems-_Lost_stars">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="警告消息">
+			<param name="Local" value="Trouble_shooting.htm#Problems-_Alerts">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="显示窗口问题">
+			<param name="Local" value="Trouble_shooting.htm#Problems-_Display_Window">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="热像素与自动选星问题">
+			<param name="Local" value="Trouble_shooting.htm#Problems-Hot_Pixels">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="恢复基本导星设置">
+			<param name="Local" value="Trouble_shooting.htm#Problems-Restore_Guiding_Parameters">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="导星效果不佳">
+			<param name="Local" value="Trouble_shooting.htm#Problems-_Poor_Guiding">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="使用日志文件">
+			<param name="Local" value="Trouble_shooting.htm#Log_analysis">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="报告问题">
+			<param name="Local" value="Trouble_shooting.htm#Problem_Reporting">
+			</OBJECT>
+	</UL>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="补充说明">
+		<param name="Local" value="Supplemental_Info.htm">
+		</OBJECT>
+	<UL>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="天文视宁度">
+			<param name="Local" value="Supplemental_Info.htm#Astronomical_seeing">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="像素合并的使用">
+			<param name="Local" value="Supplemental_Info.htm#Binning_usage">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="抖动操作">
+			<param name="Local" value="Supplemental_Info.htm#Dithering_Ops">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="赤道仪常见问题">
+			<param name="Local" value="Supplemental_Info.htm#Common_mount_problems">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="单向赤纬导星">
+			<param name="Local" value="Supplemental_Info.htm#Declination-Uni-directional_guiding">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="高精度赤道仪">
+			<param name="Local" value="Supplemental_Info.htm#Variable_delay_guiding">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="差异挠曲">
+			<param name="Local" value="Supplemental_Info.htm#Differential_flexure">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="自适应光学导星">
+			<param name="Local" value="Supplemental_Info.htm#AO_Devices">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="日志记录">
+			<param name="Local" value="Supplemental_Info.htm#Logging_and_Debug_Output">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="自动上传日志">
+			<param name="Local" value="Supplemental_Info.htm#Logging-Automatic_Upload">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="设备配置文件">
+			<param name="Local" value="Supplemental_Info.htm#Managing_Equipment_Profiles">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="辅助赤道仪：询问坐标">
+			<param name="Local" value="Supplemental_Info.htm#Ask_for_coordinates_aux_mount">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="模拟器控制">
+			<param name="Local" value="Supplemental_Info.htm#Advanced_Settings_for_the_Simulators">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="多个 PHD2 实例">
+			<param name="Local" value="Supplemental_Info.htm#Multiple_Executions">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="键盘快捷键">
+			<param name="Local" value="Supplemental_Info.htm#Keyboard_Shortcuts">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="软件更新">
+			<param name="Local" value="Supplemental_Info.htm#Software_Update">
+			</OBJECT>
+	</UL>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="教程">
+		<param name="Local" value="Tutorials.htm">
+		</OBJECT>
+	<UL>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="漂移法极轴对准">
+			<param name="Local" value="Tutorials.htm#Drift_Align">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="静态极轴对准">
+			<param name="Local" value="Tutorials.htm#Static_polar_alignment">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="极轴漂移对准">
+			<param name="Local" value="Tutorials.htm#Polar_Drift_Align">
+			</OBJECT>
+	</UL>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Name" value="术语表">
+		<param name="Local" value="Glossary.html">
+		</OBJECT>
+</UL>
+</BODY></HTML>

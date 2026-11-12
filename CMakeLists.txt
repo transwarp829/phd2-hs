@@ -124,6 +124,9 @@ enable_testing()
 # to be changed in add_subdirectory
 include(thirdparty/thirdparty.cmake)
 
+# Hardware-free regression tests for capture transitions and image previews.
+add_subdirectory(tests)
+
 
 #################################################################################
 #

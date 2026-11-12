@@ -39,6 +39,7 @@
 # include "camera.h"
 # include "cam_qhy.h"
 # include "qhyccd.h"
+# include "qhy_capture_state.h"
 
 # define QHYCCD_OFF 0.0
 # define QHYCCD_ON 1.0
@@ -84,10 +85,8 @@ class Camera_QHY : public GuideCamera
     double m_usbTrafficMax;
     double m_usbTrafficStep;
     bool m_hasUsbTraffic;
-    bool m_liveMode;      // stream mode 1: free-running, GetQHYCCDLiveFrame
-    double m_curExposure; // last exposure written to the camera, -1 = unknown
+    QhyCaptureState m_captureState;
     int m_curBinMode;     // last binning written to the camera, -1 = unknown
-    bool m_liveStreaming; // BeginQHYCCDLive succeeded and has not been ended
 
     char m_camId[CAMERA_ID_LENGTH] = "";
     double m_devicePixelSize;
@@ -228,8 +227,6 @@ Camera_QHY::Camera_QHY()
     HasSubframes = true;
     m_camhandle = 0;
 
-    m_liveMode = false;
-    m_curExposure = -1;
     m_curBinMode = -1;
 
     m_curBin = 1;
@@ -461,7 +458,7 @@ void Camera_QHY::ShowPropertyDialog()
         if (!m_hasHighGain)
             dlg.m_highGainCb->Hide();
 
-        dlg.m_liveModeCb->SetValue(m_liveMode);
+        dlg.m_liveModeCb->SetValue(m_captureState.PendingLiveMode());
 
         dlg.DoLayoutAdaptation();
 
@@ -507,12 +504,14 @@ void Camera_QHY::ShowPropertyDialog()
             pConfig->Profile.SetBoolean(CONFIG_PATH_QHY_HIGHGAIN, m_highGain);
 
             bool const live = dlg.m_liveModeCb->GetValue();
-            if (live != m_liveMode)
+            if (live != m_captureState.PendingLiveMode())
             {
-                m_liveMode = live;
-                pConfig->Profile.SetBoolean(CONFIG_PATH_QHY_LIVEMODE, m_liveMode);
-                reconnect = true;
+                m_captureState.SetPendingLiveMode(live);
+                pConfig->Profile.SetBoolean(CONFIG_PATH_QHY_LIVEMODE, live);
             }
+            // SetQHYCCDStreamMode is latched when the handle is initialized.
+            // Keep the active capture path unchanged until the next connection.
+            reconnect = reconnect || live != m_captureState.LiveMode();
 
             m_settingsChanged = true;
         }
@@ -666,17 +665,15 @@ bool Camera_QHY::Connect(const wxString& camId)
     // applies. Forget the cached values: otherwise the "write only when it
     // changes" shortcut would skip the first write after a reconnect and the
     // camera would keep integrating with the SDK's default exposure.
-    m_curExposure = -1;
     m_curBinMode = -1;
 
     // before calling InitQHYCCD() we must call SetQHYCCDStreamMode(camhandle, 0 or 1)
     //   0: single frame mode
     //   1: live frame mode
-    m_liveMode = pConfig->Profile.GetBoolean(CONFIG_PATH_QHY_LIVEMODE, false);
-    m_liveStreaming = false;
-    uint32_t ret = SetQHYCCDStreamMode(m_camhandle, m_liveMode ? 1 : 0);
-    Debug.Write(wxString::Format("QHY: stream mode = %d (%s)\n", m_liveMode ? 1 : 0,
-                                 m_liveMode ? "live" : "single frame"));
+    m_captureState.BeginConnection(pConfig->Profile.GetBoolean(CONFIG_PATH_QHY_LIVEMODE, false));
+    uint32_t ret = SetQHYCCDStreamMode(m_camhandle, m_captureState.LiveMode() ? 1 : 0);
+    Debug.Write(wxString::Format("QHY: stream mode = %d (%s)\n", m_captureState.LiveMode() ? 1 : 0,
+                                 m_captureState.LiveMode() ? "live" : "single frame"));
     if (ret != QHYCCD_SUCCESS)
     {
         CloseQHYCCD(m_camhandle);
@@ -895,6 +892,7 @@ bool Camera_QHY::Connect(const wxString& camId)
         return CamConnectFailed(_("Failed to set camera binning"));
     }
     m_curBin = HwBinning;
+    m_curBinMode = HwBinning;
 
     m_maxSize = wxSize(imagew, imageh);
     FrameSize = wxSize(imagew / HwBinning, imageh / HwBinning);
@@ -917,10 +915,12 @@ bool Camera_QHY::Connect(const wxString& camId)
         return CamConnectFailed(_("Init camera failed"));
     }
 
-    if (m_liveMode)
+    if (m_captureState.LiveMode())
     {
-        ret = BeginQHYCCDLive(m_camhandle);
-        if (ret != QHYCCD_SUCCESS)
+        if (!m_captureState.StartLive([&]() {
+                ret = BeginQHYCCDLive(m_camhandle);
+                return ret == QHYCCD_SUCCESS;
+            }))
         {
             // The stream mode is latched at init time, so there is no way back to
             // single frame without a fresh InitQHYCCD: fail loudly and name the key.
@@ -929,7 +929,6 @@ bool Camera_QHY::Connect(const wxString& camId)
             m_camhandle = 0;
             return CamConnectFailed(_("Failed to start live mode - clear /camera/QHY/LiveMode to use single frame mode"));
         }
-        m_liveStreaming = true;
         Debug.Write(wxString::Format("QHY: live mode started\n"));
     }
 
@@ -947,11 +946,13 @@ static void StopCapture(qhyccd_handle *handle)
 
 bool Camera_QHY::Disconnect()
 {
-    if (m_liveStreaming)
+    if (m_captureState.Streaming())
     {
-        uint32_t ret = StopQHYCCDLive(m_camhandle);
-        Debug.Write(wxString::Format("QHY: StopQHYCCDLive ret %u\n", (unsigned) ret));
-        m_liveStreaming = false;
+        m_captureState.StopLive([&]() {
+            uint32_t ret = StopQHYCCDLive(m_camhandle);
+            Debug.Write(wxString::Format("QHY: StopQHYCCDLive ret %u\n", (unsigned) ret));
+            return ret == QHYCCD_SUCCESS;
+        });
     }
     else
     {
@@ -962,6 +963,7 @@ bool Camera_QHY::Disconnect()
     CloseQHYCCD(m_camhandle);
 # endif
     m_camhandle = 0;
+    m_captureState.EndConnection();
     Connected = false;
     delete[] RawBuffer;
     RawBuffer = 0;
@@ -1056,53 +1058,60 @@ bool Camera_QHY::Capture(usImage& img, const CaptureParams& captureParams)
     }
 
     uint32_t ret = QHYCCD_ERROR;
+    // Configure geometry while the live stream is stopped. Restart below, after
+    // restoring the requested exposure, so no frame can use the previous setup.
+    if (m_captureState.LiveMode() && (m_roi != roi || HwBinning != m_curBinMode))
+    {
+        if (!m_captureState.StopLive([&]() {
+                ret = StopQHYCCDLive(m_camhandle);
+                return ret == QHYCCD_SUCCESS;
+            }))
+        {
+            Debug.Write(wxString::Format("QHY: stop live for geometry change failed: %u\n", (unsigned) ret));
+            DisconnectWithAlert(_("QHY exposure failed"), NO_RECONNECT);
+            return true;
+        }
+        m_captureState.InvalidateExposure();
+    }
     // lzr from QHY says this needs to be set for every exposure. That advice is for
     // the single-frame path; in live mode there is no per-exposure reconfiguration,
     // and re-issuing it while streaming may restart the sensor readout, so only send
     // it when the binning actually changes.
-    if (!m_liveMode || HwBinning != m_curBinMode)
+    if (!m_captureState.LiveMode() || HwBinning != m_curBinMode)
     {
         ret = SetQHYCCDBinMode(m_camhandle, HwBinning, HwBinning);
         if (ret != QHYCCD_SUCCESS)
+        {
             Debug.Write(wxString::Format("SetQHYCCDBinMode failed! ret = %d\n", (int) ret));
+            DisconnectWithAlert(_("Failed to set camera binning"), NO_RECONNECT);
+            return true;
+        }
         else
             m_curBinMode = HwBinning;
     }
 
     if (m_roi != roi)
     {
-        // when roi changes, must call this
-        if (m_liveStreaming)
+        // Live capture was stopped above; the single-frame SDK path requires
+        // cancelling any previous exposure before changing the ROI.
+        if (!m_captureState.LiveMode())
         {
-            StopQHYCCDLive(m_camhandle);
-            m_liveStreaming = false;
-        }
-        ret = CancelQHYCCDExposingAndReadout(m_camhandle);
-        if (ret == QHYCCD_SUCCESS)
-        {
-            Debug.Write("CancelQHYCCDExposingAndReadout success\n");
-        }
-        else
-        {
-            Debug.Write("CancelQHYCCDExposingAndReadout failed\n");
+            ret = CancelQHYCCDExposingAndReadout(m_camhandle);
+            Debug.Write(wxString::Format("QHY: cancel before ROI change ret %u\n", (unsigned) ret));
         }
 
         ret = SetQHYCCDResolution(m_camhandle, roi.GetLeft(), roi.GetTop(), roi.GetWidth(), roi.GetHeight());
         if (ret == QHYCCD_SUCCESS)
         {
             m_roi = roi;
-            m_curExposure = -1; // the reconfiguration drops it
-            if (m_liveMode)
-            {
-                uint32_t bret = BeginQHYCCDLive(m_camhandle);
-                m_liveStreaming = (bret == QHYCCD_SUCCESS);
-                Debug.Write(wxString::Format("QHY: restart live after ROI change ret %u\n", (unsigned) bret));
-            }
+            m_captureState.InvalidateExposure(); // the reconfiguration drops it
         }
         else
         {
             Debug.Write(wxString::Format("SetQHYCCDResolution(%d,%d,%d,%d) failed! ret = %d\n", roi.GetLeft(), roi.GetTop(),
                                          roi.GetWidth(), roi.GetHeight(), (int) ret));
+            DisconnectWithAlert(_("QHY exposure failed"), NO_RECONNECT);
+            return true;
         }
     }
 
@@ -1178,27 +1187,35 @@ bool Camera_QHY::Capture(usImage& img, const CaptureParams& captureParams)
         m_settingsChanged = false;
     }
 
-    // Writing the exposure on every frame restarts the integration on some bodies,
-    // which costs a frame each time in live mode. The camera keeps the value, so only
-    // write it when it differs from what we last sent.
-    if (duration != m_curExposure)
+    // A changed live exposure must start a fresh integration: the old one could
+    // otherwise outlive the timeout for a newly selected shorter exposure. The
+    // helper makes no SDK calls when the exposure and geometry are unchanged.
+    QhyCaptureState::Error exposureError = m_captureState.PrepareExposure(duration,
+        [&]() {
+            ret = StopQHYCCDLive(m_camhandle);
+            return ret == QHYCCD_SUCCESS;
+        },
+        [&](int exposureMs) {
+            ret = SetQHYCCDParam(m_camhandle, CONTROL_EXPOSURE, exposureMs * 1000.0);
+            if (ret == QHYCCD_SUCCESS)
+                Debug.Write(wxString::Format("QHY: exposure set to %d ms\n", exposureMs));
+            return ret == QHYCCD_SUCCESS;
+        },
+        [&]() {
+            ret = BeginQHYCCDLive(m_camhandle);
+            return ret == QHYCCD_SUCCESS;
+        });
+    if (exposureError != QhyCaptureState::Error::None)
     {
-        ret = SetQHYCCDParam(m_camhandle, CONTROL_EXPOSURE, duration * 1000.0); // QHY duration is usec
-        if (ret == QHYCCD_ERROR)
-        {
-            Debug.Write(wxString::Format("QHY set exposure ret %d\n", (int) ret));
-            pFrame->Alert(_("Failed to set camera exposure length"));
-        }
-        else
-        {
-            Debug.Write(wxString::Format("QHY: exposure set to %d ms\n", duration));
-            m_curExposure = duration;
-        }
+        Debug.Write(wxString::Format("QHY: prepare exposure failed at stage %d, ret %u\n",
+                                     (int) exposureError, (unsigned) ret));
+        DisconnectWithAlert(_("QHY exposure failed"), NO_RECONNECT);
+        return true;
     }
 
     uint32_t w, h, bpp, channels;
 
-    if (m_liveMode)
+    if (m_captureState.LiveMode())
     {
         // Free-running: the camera is already integrating, so there is nothing to
         // start and nothing to cancel - take whatever frame it has ready.

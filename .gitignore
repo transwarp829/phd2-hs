@@ -2,3 +2,5 @@ TAGS
 /tmp*
 /.vscode
 locale/*/messages.mo
+/build-capture-tests/
+__pycache__/

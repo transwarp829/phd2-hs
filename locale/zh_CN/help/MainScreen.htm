@@ -1,0 +1,125 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="GENERATOR" content="Microsoft® HTML Help Workshop 4.1"><title>主界面</title></head>
+<body>
+<h2>主界面</h2><span style="font-style: italic;">PHD2</span>主窗口的设计注重清晰、易用，让您能够以简便、自然的操作顺序启动和控制导星。基本步骤如下：<br>
+<ol>
+<li>连接 PHD2 设备配置文件，按其中的设置连接导星相机和赤道仪。</li>
+<li>开始循环导星曝光，查看视场内可用的星点。</li>
+<li>让 PHD2 自动选择合适的星点并进行导星标定。</li>
+<li>持续跟踪选定星点，同时使用各项显示工具查看运行情况。</li>
+<li>根据需要停止或恢复导星。</li>
+</ol>
+<img style="width: 874px; height: 817px;" alt="" src="Main_Screen.png"><br>
+<p>屏幕的大部分区域用于显示导星相机的图像；在正常的夜间条件下，其中会显示可用于导星的星点。图像大小、亮度和对比度会自动调整，以便您观察星点。但这些调整仅用于显示。在内部，<span style="font-style: italic;">PHD2</span>始终使用未经调整的原始数据，以获得最高的导星精度。您也可以单击图像中的星点进行手动选星，但更推荐使用“自动选星”功能。调整滑块，可以看清视场内非常暗弱的星点。<br></p>
+<h3><a name="Basic_control"></a>基本控制</h3>主要控件位于窗口底部。<span style="font-style: italic;">PHD2</span>的大多数操作由这些按钮和滑块完成；窗口顶部的下拉菜单则提供更详细的功能。从左到右，主要按钮如下：<br>
+
+<table style="text-align: left; border-collapse: collapse; width: 1012px;">
+
+
+<tbody><tr>
+<td style="border-style: solid; width: 596px;">
+<img style="margin-right: 10px; position: relative; bottom: 0px; width: 40px; height: 40px; float: right;" src="Main_Connect_Equipment.png" alt="" title="连接相机和赤道仪设备。">
+</td>
+<td style="border-style: solid; width: 405px;">
+<p style="margin-left: 10px;">
+
+<b>连接设备按钮</b><br>启用定义了设备连接的 PHD2 配置文件。如果要连接上次使用的同一套设备，可以<span style="color: black;"><span style="font-weight: bold;">按住 Shift 单击</span></span>此按钮。</p>
+</td>
+</tr>
+
+<tr>
+<td style="border-style: solid; text-align: right; width: 596px;">
+<img style="width: 31px; height: 32px;" alt="" src="Main_Loop_Exposures.png"><br>
+</td>
+<td style="border-style: solid; width: 405px;">
+<p style="margin-left: 10px;">
+
+<b>循环曝光按钮</b><br>启动导星相机的重复曝光序列（<i>循环曝光</i>），每次取得的图像（导星帧）都会显示在图像窗口中。随后启动导星后，再次单击<b>循环曝光</b>按钮会暂停导星，但继续拍摄导星图像。</p>
+</td>
+</tr>
+
+<tr>
+<td style="border-style: solid; width: 596px; text-align: right;">
+<img style="width: 88px; height: 90px;" alt="" src="Main_Auto-select_Star.png"><br>
+</td>
+<td style="border-style: solid; width: 405px;">
+<p style="margin-left: 10px;">
+
+<b>自动选星按钮</b><br>自动选择图像窗口中最合适的候选导星星点。选星采用量化判断，同时考虑星点是否饱和、最小星点尺寸、信噪比、与其他星点的距离，以及与图像<b style="font-weight: bold;"> </b><span style="font-weight: bold;"></span>窗口边缘的距离等因素。<a href="Tools.htm#Auto-Select_Star" style="color: blue;"><b><i></i></b></a>您可以<span style="color: black;"><span style="font-weight: bold;">按住 Shift 单击</span></span>此按钮，取消选星。</p>
+</td>
+</tr>
+
+<tr>
+<td style="border-style: solid; width: 596px;">
+<img style="margin-right: 10px; position: relative; bottom: 0px; width: 40px; height: 40px; float: right;" src="Main_Guide.png" alt="" title="如有需要先标定，然后对选定星点开始导星。">
+</td>
+<td style="border-style: solid; width: 405px;">
+<p style="margin-left: 10px;">
+
+<b>导星按钮</b><br>如有需要，先执行标定，然后对选定星点开始导星。</p>
+</td>
+</tr>
+
+<tr>
+<td style="border-style: solid; width: 596px;">
+<img style="margin-right: 10px; position: relative; bottom: 0px; width: 40px; height: 40px; float: right;" src="Main_Stop.png" alt="" title="停止导星和循环曝光。">
+</td>
+<td style="border-style: solid; width: 405px;">
+<p style="margin-left: 10px;">
+
+<b>停止按钮</b><br>同时停止导星和循环曝光。</p>
+</td>
+</tr>
+
+<tr>
+<td style="border-style: solid; width: 596px; text-align: right;">
+<img style="width: 300px; height: 84px;" alt="" src="Main_Exposure_Duration.png"><br>
+</td>
+<td style="border-style: solid; width: 405px;">
+<p style="margin-left: 10px;">
+
+<b>曝光时长下拉框</b><br>以秒为单位列出可选曝光时长（<b>自动（Auto）</b>, <b>0.01 秒</b>至<b>15 秒</b>，以及<b>自定义（Custom:）</b>选项；可通过<b>编辑自定义值…（Edit Custom...）</b>设置自己的数值）。使用此下拉框设置导星相机的曝光时长。如果相机不支持所选时长，<b><i>PHD2</i></b>会尽可能模拟。例如，短曝光网络摄像头的最长实际曝光时间可能只有 1/30 秒。如果您选择 1 秒，<b><i>PHD2</i></b>就会在 1 秒内连续采集图像，再将它们叠加为一张用于导星的合成图像。</p>
+</td>
+</tr>
+
+<tr>
+<td style="border-style: solid; width: 596px; text-align: right;">
+<img style="width: 524px; height: 80px;" alt="" src="Main_Gamma_Adjustment.png"><br>
+</td>
+<td style="border-style: solid; width: 405px;">
+<p style="margin-left: 10px;">
+
+<b>伽马调整滑块</b><br>用于调整屏幕图像的拉伸和对比度，本质上是“伽马”调整。<b><i>PHD2</i></b>会根据图像最暗和最亮的像素自动调整显示，滑块则用于进一步微调，使星点更容易看清。例如，首次为导星相机调焦时，需要看清又大又模糊的离焦星像，此功能就很有用。移动伽马滑块只会改变您看到的显示亮度。<b><i>PHD2</i></b>始终使用相机的原始像素进行导星，移动伽马滑块不会影响导星。画面完全变白或变黑，通常表示视场内没有可见星点，或相机尚未合焦。图像的自动伽马拉伸经常让用户困惑：如果没有正确调整伽马滑块，显示窗口中的暗星就可能看不见。</p>
+</td>
+</tr>
+
+<tr>
+<td style="border-style: solid; width: 596px; text-align: right;">
+<img style="width: 88px; height: 86px;" alt="" src="Main_Advanced_Settings.png"><br>
+</td>
+<td style="border-style: solid; width: 405px;">
+<p style="margin-left: 10px;">
+
+<b>高级设置（大脑按钮）</b><br>打开<b>高级设置</b>对话框，供您详细调整导星操作。<b><i>PHD2</i></b>的一项重要设计目标，是尽量减少您修改这些参数的需要；但这里仍提供一些调整选项，帮助您理解并改善导星表现。</p>
+</td>
+</tr>
+
+<tr>
+<td style="border-style: solid; width: 596px; text-align: right;">
+<img style="width: 41px; height: 35px;" alt="" src="Main_Camera_Settings.png"><br>
+</td>
+<td style="border-style: solid; width: 405px;">
+<p style="margin-left: 10px;">
+
+<b>相机设置按钮</b><br>视具体相机而定，此按钮可能可用，用于打开该相机专用的配置对话框。</p>
+</td>
+</tr>
+
+</tbody></table>
+
+
+<br>
+<h3><a name="Menus"></a>菜单</h3>导星主图像上方的下拉菜单用于访问各种功能。具体说明见本帮助文档的<a href="Darks_BadPixel_Maps.htm">暗场</a>, <a href="Tools.htm">工具与实用程序</a><big><big><span style="font-weight: bold;">, </span></big></big>以及<span style="text-decoration: underline;"><a href="Visualization.htm">监测工具</a> </span>章节。<h3><a name="Status_Bar"></a>状态栏</h3><img style="width: 1095px; height: 29px;" alt="" src="Main_Status.png"><br><br>主窗口底部的状态栏显示消息和状态信息，帮助您了解导星运行情况。<br><br>状态栏中部的字段显示当前导星星点的状态。最左侧字段显示当前管理的导星星点数量。有时第一个数字会是 1，这发生在稳定过程或重新评估导星星点列表期间。右侧下一个字段显示导星列表中主星（或单颗星）的信噪比 SNR。当 SNR 低于 10 时，数值会显示为黄色，提示可能发生“丢星”。在单星导星模式下，如果导星星点饱和，SNR 左侧会以红字显示“已饱和（Saturated）”。<br><br>星点状态字段右侧的两个文本字段显示最近的赤经 RA 和赤纬 Dec 导星指令，包括导星脉冲时长、以像素表示的星点位移，以及表示方向的箭头。箭头遵循通常的方位约定：Dec 向上/向下分别表示北/南，RA 向左/向右分别表示西/东。所有这些信息都会写入日志，并在各项图形工具中显示；评估导星表现时，应使用这些日志和图形工具。状态栏中的字段主要用于在运行异常时提供快速的视觉提示。<br><br>状态栏最右侧的图标直观显示 PHD2 的当前状态。图标用颜色区分状态，含义如下：<br><br>“Dark”——红色表示既没有使用暗场库，也没有使用坏像素图；绿色表示正在使用其中之一。如果使用坏像素图，文字会显示为“BPM”，而非“Dark”。<br><br>“Cal”——显示标定状态。红色表示赤道仪尚未标定；黄色表示已有标定，但不会根据望远镜指向位置自动调整。如果 PHD2 没有使用 ASCOM 或“辅助赤道仪（aux）”连接，或者误关闭了赤纬补偿，就会出现这种情况。图标为黄色时，望远镜转向不同赤纬位置后，通常需要重新标定。<br><br>“圆球”——显示配置文件中的所有设备是否连接成功。黄色表示部分设备尚未连接，绿色表示全部设备已连接。<br><br>将鼠标停留在任一状态图标上，即可查看当前状态的详细信息。<br><br>
+<p></p>
+</body></html>

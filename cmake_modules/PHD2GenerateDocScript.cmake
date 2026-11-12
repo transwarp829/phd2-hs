@@ -41,9 +41,15 @@
 
 include(${project_root_dir}/cmake_modules/PHD2BuildDoc.cmake)
 
-# Generates the hhk file of the given locale
-generate_hhk(OUTPUT_FILE "${output_folder}/PHD2GuideHelp.hhk"
-             INPUT_FILES "${list_of_files}")
+# Translated indexes keep readable labels while retaining stable English anchors.
+file(MAKE_DIRECTORY "${output_folder}")
+if(EXISTS "${input_folder}/PHD2GuideHelp.hhk.in")
+  configure_file("${input_folder}/PHD2GuideHelp.hhk.in"
+                 "${output_folder}/PHD2GuideHelp.hhk" COPYONLY)
+else()
+  generate_hhk(OUTPUT_FILE "${output_folder}/PHD2GuideHelp.hhk"
+               INPUT_FILES "${list_of_files}")
+endif()
 
 # this is required for zip: we copy the files in the output folder to be able to zip them
 # with proper path. There is no path component for this list as the ZIP command needs to be ran
@@ -72,4 +78,8 @@ message("to ${output_folder}/PHD2GuideHelp.zip")
 execute_process(COMMAND
                 ${CMAKE_COMMAND} -E tar cfv ${output_folder}/PHD2GuideHelp.zip --format=zip ${files_to_zip}
                 WORKING_DIRECTORY ${output_folder}
-                OUTPUT_QUIET)
+                OUTPUT_QUIET
+                RESULT_VARIABLE zip_result)
+if(NOT zip_result EQUAL 0)
+  message(FATAL_ERROR "Could not package help files: ${zip_result}")
+endif()
