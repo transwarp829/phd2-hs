@@ -7418,11 +7418,10 @@ msgid ""
 "your mount.\n"
 "Please review the Help guide on 'Equipment Connections' for more details."
 msgstr ""
-"此設置不會向 PHD2 提供有關望遠鏡指向位置的任何信息, 因此您必需要重新校準\\ "
-"n\n"
+"此設置不會向 PHD2 提供有關望遠鏡指向位置的任何信息, 因此您必需要重新校準\n"
 "每當望遠鏡轉動時, 某些 PHD2 功能將被禁用, 除非你的赤道儀沒有相關可用的驅動程"
 "式, \n"
-"否則, 您應該在 “赤道儀” 或 “輔助赤道儀” 中選擇 ASCOM 或I NDI 赤道儀\\ n\n"
+"否則, 您應該在 “赤道儀” 或 “輔助赤道儀” 中選擇 ASCOM 或 INDI 赤道儀\n"
 "詳細信息，請查看“設備連接”的幫助指南。"
 
 #: profile_wizard.cpp:573

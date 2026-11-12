@@ -94,80 +94,80 @@ msgstr "未指定赤道仪"
 
 #: alpaca_config.cpp:111
 msgid "Alpaca Camera Setup"
-msgstr ""
+msgstr "Alpaca 相机设置"
 
 #: alpaca_config.cpp:111
 msgid "Alpaca Telescope Setup"
-msgstr ""
+msgstr "Alpaca 望远镜设置"
 
 #: alpaca_config.cpp:117
 msgid "Manual Device"
-msgstr ""
+msgstr "手动指定设备"
 
 #: alpaca_config.cpp:119
 msgid "Host:"
-msgstr ""
+msgstr "主机："
 
 #: alpaca_config.cpp:126
 msgid "Port:"
-msgstr ""
+msgstr "端口："
 
 #: alpaca_config.cpp:131
 msgid "Device #:"
-msgstr ""
+msgstr "设备编号："
 
 #: alpaca_config.cpp:136
 msgid "Use This Address"
-msgstr ""
+msgstr "使用此地址"
 
 #: alpaca_config.cpp:142
 msgid "Discovered Devices"
-msgstr ""
+msgstr "已发现的设备"
 
 #: alpaca_config.cpp:147
 msgid "Override IP:"
-msgstr ""
+msgstr "覆盖 IP："
 
 #: alpaca_config.cpp:149
 msgid ""
 "Optional. Extra IP/hostname (or subnet broadcast) to probe for Alpaca "
 "devices the normal broadcast can't reach. Applies to all Alpaca discovery."
-msgstr ""
+msgstr "可选。额外填写一个 IP/主机名（或子网广播地址），用于探测普通广播无法到达的 Alpaca 设备。对所有 Alpaca 设备探测都生效。"
 
 #: alpaca_config.cpp:152
 msgid "Discover"
-msgstr ""
+msgstr "搜索"
 
 #: alpaca_config.cpp:166
 msgid "Show IPv6 devices"
-msgstr ""
+msgstr "显示 IPv6 设备"
 
 #: alpaca_config.cpp:171
 msgid "Use Selected Device"
-msgstr ""
+msgstr "使用选中的设备"
 
 #: alpaca_config.cpp:180
 msgid "Verbose logging (all Alpaca devices)"
-msgstr ""
+msgstr "详细日志（所有 Alpaca 设备）"
 
 #: alpaca_config.cpp:182
 msgid ""
 "Log every Alpaca request (with its response time) to the debug log. Useful "
 "for diagnosing slow or unreliable network connections. This is a global "
 "setting -- it applies to every Alpaca camera and mount, not just this device."
-msgstr ""
+msgstr "把每一个 Alpaca 请求（连同响应耗时）写入调试日志。有助于诊断缓慢或不可靠的网络连接。这是全局设置——对每一个 Alpaca 相机和赤道仪都生效，不只是这个设备。"
 
 #: alpaca_config.cpp:197 alpaca_config.cpp:261
 msgid "(searching...)"
-msgstr ""
+msgstr "（正在搜索...）"
 
 #: alpaca_config.cpp:299
 msgid "(no devices found)"
-msgstr ""
+msgstr "（未找到设备）"
 
 #: alpaca_config.cpp:299
 msgid "(no IPv4 devices found)"
-msgstr ""
+msgstr "（未找到 IPv4 设备）"
 
 #: aui_controls.cpp:384 aui_controls.cpp:395 guiding_assistant.cpp:387
 msgid "SNR"
@@ -241,11 +241,11 @@ msgstr ", "
 
 #: aui_controls.cpp:766
 msgid "BPM"
-msgstr "BPM"
+msgstr "坏点图"
 
 #: aui_controls.cpp:766 aui_controls.cpp:840 aui_controls.cpp:852
 msgid "Dark"
-msgstr "暗"
+msgstr "暗场"
 
 #: aui_controls.cpp:831
 msgid "All devices connected"
@@ -258,7 +258,7 @@ msgstr "未连接设备"
 #: aui_controls.cpp:835
 #, c-format
 msgid "Devices not connected: %s"
-msgstr "设备：%s 未连接 "
+msgstr "设备：%s 未连接"
 
 #: aui_controls.cpp:841
 msgid "Dark library in use"
@@ -278,7 +278,7 @@ msgstr "坏点图未使用"
 
 #: aui_controls.cpp:852
 msgid "Cal"
-msgstr "校"
+msgstr "校准"
 
 #: aui_controls.cpp:922
 msgid "Selected star at (999.9, 999.9)"
@@ -390,20 +390,20 @@ msgstr "曝光时间"
 
 #: calibration_assistant.cpp:175
 msgid "Calibration Assistant"
-msgstr ""
+msgstr "校准助手"
 
 #: calibration_assistant.cpp:179
 msgid "Current Pointing Location"
-msgstr ""
+msgstr "当前指向位置"
 
 #: calibration_assistant.cpp:180
 msgid "Calibration Location"
-msgstr ""
+msgstr "校准位置"
 
 #: calibration_assistant.cpp:189 calibration_assistant.cpp:212
 #: calibration_assistant.cpp:1108
 msgid "Pointing"
-msgstr ""
+msgstr "指向位置"
 
 #: calibration_assistant.cpp:190 calibration_assistant.cpp:213
 #: calibration_assistant.cpp:1109 calreview_dialog.cpp:305
@@ -429,57 +429,57 @@ msgstr "赤纬"
 #: calibration_assistant.cpp:196 calibration_assistant.cpp:210
 #: calibration_assistant.cpp:1106
 msgid "Meridian offset (degrees)"
-msgstr ""
+msgstr "子午圈偏移（度）"
 
 #: calibration_assistant.cpp:205
 msgid ""
 "Target declination for slew, as close to Dec = 0 as possible for your "
 "location (>=-20 and <= 20) recommended"
-msgstr ""
+msgstr "指向目标的赤纬：在你的站点条件下尽量接近赤纬 = 0（推荐 -20 到 +20 之间）"
 
 #: calibration_assistant.cpp:208
 msgid ""
 "Target offset from central meridian, in degrees; east or west based on "
 "'Pointing' buttons (less than 15 degrees recommended)"
-msgstr ""
+msgstr "目标相对中央子午圈的偏移（度）；按“指向位置”按钮取东或西（推荐小于 15 度）"
 
 #: calibration_assistant.cpp:214 calibration_assistant.cpp:1110
 msgid "Scope on the east side of pier, pointing west"
-msgstr ""
+msgstr "望远镜位于支架东侧，指向西"
 
 #: calibration_assistant.cpp:217
 msgid "Scope on west side of pier, pointing east"
-msgstr ""
+msgstr "望远镜位于支架西侧，指向东"
 
 #: calibration_assistant.cpp:225
 msgid "Save custom values..."
-msgstr ""
+msgstr "保存自定义值..."
 
 #: calibration_assistant.cpp:226
 msgid ""
 "Save a custom sky location if your site has restricted sky visibility and "
 "you can't calibrate at the recommended location"
-msgstr ""
+msgstr "如果你的站点天空可见范围受限、无法在推荐位置校准，可保存一个自定义天空位置"
 
 #: calibration_assistant.cpp:229
 msgid "Load custom values"
-msgstr ""
+msgstr "载入自定义值"
 
 #: calibration_assistant.cpp:231
 msgid ""
 "Reload a previously saved custom location and displays its values in the "
 "'Calibration Location' fields"
-msgstr ""
+msgstr "重新载入先前保存的自定义位置，并在“校准位置”各栏中显示其数值"
 
 #: calibration_assistant.cpp:233
 msgid "Restore defaults"
-msgstr ""
+msgstr "恢复默认值"
 
 #: calibration_assistant.cpp:234
 msgid ""
 "Restore the 'Calibration Location' fields to show the recommended pointing "
 "location"
-msgstr ""
+msgstr "将“校准位置”各栏恢复为推荐指向位置"
 
 #: calibration_assistant.cpp:247 calibration_assistant.cpp:692
 #: drift_tool.cpp:207 drift_tool.cpp:560
@@ -490,7 +490,7 @@ msgstr "指向"
 msgid ""
 "Start a slew to the calibration location. BE SURE the scope can be safely "
 "slewed"
-msgstr ""
+msgstr "开始指向到校准位置。务必确认望远镜可以安全移动"
 
 #: calibration_assistant.cpp:250 pierflip_tool.cpp:125 pierflip_tool.cpp:250
 msgid "Calibrate"
@@ -500,7 +500,7 @@ msgstr "校准"
 msgid ""
 "Start the PHD2 calibration.  The Calibration Assistant window will remain "
 "open to monitor and assess results"
-msgstr ""
+msgstr "开始 PHD2 校准。校准助手窗口会保持打开，以监视并评估结果"
 
 #: calibration_assistant.cpp:254 calibration_assistant.cpp:1141
 #: calibration_assistant.cpp:1194 camcal_import_dialog.cpp:128
@@ -513,17 +513,17 @@ msgstr "取消"
 msgid ""
 "Close the Calibration Assistant window.  Any calibration currently underway "
 "will continue."
-msgstr ""
+msgstr "关闭校准助手窗口。正在进行的校准会继续执行。"
 
 #: calibration_assistant.cpp:262
 msgid "Explain"
-msgstr ""
+msgstr "说明"
 
 #: calibration_assistant.cpp:263
 msgid ""
 "Show additional information about any calibration result that is less than "
 "'good'"
-msgstr ""
+msgstr "对任何不算“良好”的校准结果显示附加信息"
 
 #: calibration_assistant.cpp:331
 msgid ""
@@ -531,7 +531,7 @@ msgid ""
 "Use the hand-controller or mount driver to increase the guide speed to at "
 "least 0.5x sidereal. Then click the 'Recalc' button so PHD2 can compute a "
 "correct calibration step-size."
-msgstr ""
+msgstr "你的赤道仪导星速率太慢，无法有效校准和导星。用手柄或赤道仪驱动软件把导星速率提高到至少 0.5 倍恒星时，然后点击“重算”按钮，让 PHD2 计算正确的校准步长。"
 
 #: calibration_assistant.cpp:335
 msgid ""
@@ -539,74 +539,74 @@ msgid ""
 "sidereal. Use the hand-controller or mount driver to increase the guide "
 "speed to at least 0.5x sidereal. Then click the 'Recalc' button so PHD2 can "
 "compute a correct calibration step-size."
-msgstr ""
+msgstr "你的赤道仪导星速率低于推荐下限 0.5 倍恒星时。用手柄或赤道仪驱动软件把导星速率提高到至少 0.5 倍恒星时，然后点击“重算”按钮，让 PHD2 计算正确的校准步长。"
 
 #: calibration_assistant.cpp:351
 msgid ""
 "Your current calibration parameters can be adjusted for more accurate "
 "results. Click the 'Recalc' button to restore them to the default values."
-msgstr ""
+msgstr "当前的校准参数可以调整以获得更准确的结果。点击“重算”按钮即可恢复为默认值。"
 
 #: calibration_assistant.cpp:391
 msgid "Calibration failed or was cancelled"
-msgstr ""
+msgstr "校准失败或被取消"
 
 #: calibration_assistant.cpp:436 calibration_assistant.cpp:568
 #: calibration_assistant.cpp:585 calibration_assistant.cpp:639
 msgid "Mount can't report its pointing position"
-msgstr ""
+msgstr "赤道仪无法报告指向位置"
 
 #: calibration_assistant.cpp:452 calibration_assistant.cpp:649
 #: calibration_assistant.cpp:1042
 msgid "MERIDIAN FLIP!"
-msgstr ""
+msgstr "中天翻转！"
 
 #: calibration_assistant.cpp:457
 msgid "WATCH SCOPE DURING SLEWING TO INSURE SAFETY"
-msgstr ""
+msgstr "指向移动期间请注意望远镜安全"
 
 #: calibration_assistant.cpp:540
 msgid ""
 "Use the 'slew' button to move the scope to within 20 degrees of Dec = 0 or "
 "as close to that as your site will allow."
-msgstr ""
+msgstr "使用“指向”按钮把望远镜移到赤纬 = 0 附近 20 度范围内，或你的站点允许的最接近位置。"
 
 #: calibration_assistant.cpp:543
 msgid ""
 "Slew the scope to within 20 degrees of Dec = 0 or as close to that as your "
 "site will allow."
-msgstr ""
+msgstr "把望远镜指向赤纬 = 0 附近 20 度范围内，或你的站点允许的最接近位置。"
 
 #: calibration_assistant.cpp:546
 msgid "Calibration is likely to fail this close to the pole."
-msgstr ""
+msgstr "如此靠近天极，校准很可能失败。"
 
 #: calibration_assistant.cpp:550
 msgid ""
 "If you calibrate within 30 degrees of the pole, you will need to recalibrate "
 "when you slew to a different target."
-msgstr ""
+msgstr "如果你在距天极 30 度以内校准，指向新的目标后需要重新校准。"
 
 #: calibration_assistant.cpp:556
 msgid ""
 "Calibration will be more accurate with the scope pointing closer to the "
 "celestial equator."
-msgstr ""
+msgstr "望远镜指向越接近天赤道，校准越准确。"
 
 #: calibration_assistant.cpp:566
 msgid "Mount is not connected"
-msgstr ""
+msgstr "赤道仪未连接"
 
 #: calibration_assistant.cpp:656
 msgid ""
 "Adjust 'Calibration Location' values if needed for your site, then click "
 "'Slew'"
-msgstr ""
+msgstr "按你的站点需要调整“校准位置”的数值，然后点击“指向”"
 
 #: calibration_assistant.cpp:658
 #, c-format
 msgid "Manually move the telescope to a Dec location near %d"
-msgstr ""
+msgstr "请手动将望远镜移到赤纬约 %d 的位置"
 
 #: calibration_assistant.cpp:692 drift_tool.cpp:560
 msgid "Slewing..."
@@ -614,62 +614,62 @@ msgstr "指向中..."
 
 #: calibration_assistant.cpp:701 calibration_assistant.cpp:754
 msgid "Slew failed! Make sure scope is tracking at sidereal rate"
-msgstr ""
+msgstr "指向失败！请确认望远镜以恒星速跟踪"
 
 #: calibration_assistant.cpp:710
 msgid "Slew was cancelled"
-msgstr ""
+msgstr "指向已取消"
 
 #: calibration_assistant.cpp:731 calibration_assistant.cpp:745
 msgid "Pausing..."
-msgstr ""
+msgstr "暂停中..."
 
 #: calibration_assistant.cpp:748 calibration_assistant.cpp:823
 msgid ""
 "Wait for tracking to stabilize, then click 'Calibrate' to start calibration "
 "or 'Cancel' to exit"
-msgstr ""
+msgstr "等跟踪稳定后，点击“校准”开始校准，或点击“取消”退出"
 
 #: calibration_assistant.cpp:782
 msgid ""
 "Could not determine tracking status. Make sure scope is un-parked and ready "
 "to slew"
-msgstr ""
+msgstr "无法判定跟踪状态。确认望远镜已解除停放并可以指向"
 
 #: calibration_assistant.cpp:790
 msgid "Mount tracking enabled"
-msgstr ""
+msgstr "赤道仪跟踪已开启"
 
 #: calibration_assistant.cpp:794
 msgid ""
 "Could not start tracking. Make sure scope is un-parked and ready to slew"
-msgstr ""
+msgstr "无法开始跟踪。确认望远镜已解除停放并可以指向"
 
 #: calibration_assistant.cpp:817
 msgid "Initial slew to approximate position"
-msgstr ""
+msgstr "首次指向到近似位置"
 
 #: calibration_assistant.cpp:820
 msgid "Final slew north to pre-clear Dec backlash"
-msgstr ""
+msgstr "最后向北指向以预清除赤纬回差"
 
 #: calibration_assistant.cpp:828
 msgid "Slewing to calibration location"
-msgstr ""
+msgstr "正在指向校准位置"
 
 #: calibration_assistant.cpp:830
 msgid ""
 "Wait for tracking to stabilize, then Click 'Calibrate' to start calibration "
 "or 'Cancel' to exit"
-msgstr ""
+msgstr "等跟踪稳定后，点击“校准”开始校准，或点击“取消”退出"
 
 #: calibration_assistant.cpp:910
 msgid "Steps"
-msgstr ""
+msgstr "步数"
 
 #: calibration_assistant.cpp:918 calibration_assistant.cpp:1284
 msgid "Orthogonality"
-msgstr ""
+msgstr "正交性"
 
 #: calibration_assistant.cpp:927 comet_tool.cpp:141
 msgid "Rates"
@@ -677,11 +677,11 @@ msgstr "跟踪速率"
 
 #: calibration_assistant.cpp:936
 msgid "Sky location (Dec comp disabled)"
-msgstr ""
+msgstr "天空位置（赤纬补偿已禁用）"
 
 #: calibration_assistant.cpp:941
 msgid "Sky location"
-msgstr ""
+msgstr "天空位置"
 
 #: calibration_assistant.cpp:945
 #, c-format
@@ -691,114 +691,114 @@ msgstr ""
 #: calibration_assistant.cpp:951
 msgid ""
 "Calibration result was good, guiding is active using the new calibration"
-msgstr ""
+msgstr "校准结果良好，已使用新校准开始导星"
 
 #: calibration_assistant.cpp:957
 msgid ""
 "Calibration result was acceptable, guiding is active using the new "
 "calibration"
-msgstr ""
+msgstr "校准结果可以接受，已使用新校准开始导星"
 
 #: calibration_assistant.cpp:964
 msgid ""
 "Calibration result was poor, consider re-doing it while following all "
 "recommendations"
-msgstr ""
+msgstr "校准结果较差，建议按全部推荐条件重新校准"
 
 #: calibration_assistant.cpp:971
 msgid "Calibration failed - probably because the mount didn't move at all"
-msgstr ""
+msgstr "校准失败——可能是赤道仪完全没有移动"
 
 #: calibration_assistant.cpp:993
 msgid "Scope isn't reporting current position"
-msgstr ""
+msgstr "望远镜未报告当前位置"
 
 #: calibration_assistant.cpp:1004
 msgid "Slew the scope closer to Dec = 0"
-msgstr ""
+msgstr "请将望远镜指向更接近赤纬 0 的位置"
 
 #: calibration_assistant.cpp:1011
 msgid "Pre-clearing backlash"
-msgstr ""
+msgstr "正在预清除回差"
 
 #: calibration_assistant.cpp:1020
 msgid "Waiting for calibration to complete"
-msgstr ""
+msgstr "等待校准完成"
 
 #: calibration_assistant.cpp:1026
 msgid "Calibration could not start - suspend any imaging automation apps"
-msgstr ""
+msgstr "无法开始校准——请暂停拍摄自动化软件"
 
 #: calibration_assistant.cpp:1092
 msgid "Save Customized Calibration Position"
-msgstr ""
+msgstr "保存自定义校准位置"
 
 #: calibration_assistant.cpp:1096
 msgid "Target Position"
-msgstr ""
+msgstr "目标位置"
 
 #: calibration_assistant.cpp:1101
 msgid ""
 "Target declination for slew, as close to Dec = 0 as possible for your "
 "location"
-msgstr ""
+msgstr "指向目标的赤纬：在你的站点条件下尽量接近赤纬 = 0"
 
 #: calibration_assistant.cpp:1105
 msgid ""
 "Target offset from central meridian, in degrees; east or west based on "
 "'Pointing' buttons"
-msgstr ""
+msgstr "目标相对中央子午圈的偏移（度）；按“指向位置”按钮取东或西"
 
 #: calibration_assistant.cpp:1113
 msgid "Scope on the west side of pier, pointing east"
-msgstr ""
+msgstr "望远镜在赤道仪西侧，指向东"
 
 #: calibration_assistant.cpp:1126
 msgid ""
 "Check this if calibration can only be done on a particular side of the "
 "meridian because of nearby obstructions"
-msgstr ""
+msgstr "如果因为附近遮挡只能在中天一侧校准，请勾选此项"
 
 #: calibration_assistant.cpp:1128 calibration_assistant.cpp:1176
 msgid "Western sky only"
-msgstr ""
+msgstr "仅西半天区"
 
 #: calibration_assistant.cpp:1130 calibration_assistant.cpp:1180
 msgid "Eastern sky only"
-msgstr ""
+msgstr "仅东半天区"
 
 #: calibration_assistant.cpp:1134
 msgid ""
 "If your site location requires a unique sky position for calibration, you "
 "can specify it here."
-msgstr ""
+msgstr "如果你的站点需要特定的天空位置才能校准，可在此指定。"
 
 #: calibration_assistant.cpp:1139 calibration_assistant.cpp:1325
 msgid "Ok"
-msgstr ""
+msgstr "确定"
 
 #: calibration_assistant.cpp:1184
 msgid "Calibration Parameters Check"
-msgstr ""
+msgstr "校准参数检查"
 
 #: calibration_assistant.cpp:1192
 msgid "Recalc"
-msgstr ""
+msgstr "重算"
 
 #: calibration_assistant.cpp:1244
 msgid "Explanation of Results"
-msgstr ""
+msgstr "结果说明"
 
 #: calibration_assistant.cpp:1251
 msgid ""
 "Assuming you have followed all the recommendations of the Calibration "
 "Assistant, the information below can help you identify any remaining "
 "problems."
-msgstr ""
+msgstr "在已经遵循校准助手全部建议的前提下，下面的信息可以帮助你找出剩余的问题。"
 
 #: calibration_assistant.cpp:1256
 msgid "Too Few Steps"
-msgstr ""
+msgstr "步数过少"
 
 #: calibration_assistant.cpp:1260
 msgid ""
@@ -806,11 +806,11 @@ msgid ""
 "is usually caused by changes to binning, focal length, or mount guide speed "
 "without using the new-profile-wizard. Run the wizard to restore the correct "
 "calibration parameters."
-msgstr ""
+msgstr "校准完成的步数少于期望值。这通常是因为更改了像素合并、焦距或赤道仪导星速率而没有使用配置文件新建向导。运行该向导以恢复正确的校准参数。"
 
 #: calibration_assistant.cpp:1270
 msgid "Unexpected Rates"
-msgstr ""
+msgstr "速率异常"
 
 #: calibration_assistant.cpp:1273
 msgid ""
@@ -818,7 +818,7 @@ msgid ""
 "expected ratio (cos(dec)).  This can be caused by substantial weight "
 "imbalance in Dec or physical resistance to movement because of cables or "
 "over-tight gear mesh."
-msgstr ""
+msgstr "相机传感器上测到的赤经与赤纬位移不符合预期比例（cos(dec)）。这通常由赤纬方向配重严重不平衡，或线缆阻碍、齿轮咬合过紧造成的运动阻力引起。"
 
 #: calibration_assistant.cpp:1288
 msgid ""
@@ -826,11 +826,11 @@ msgid ""
 "movement on the other axis. This can be caused by large periodic error in RA "
 "or polar alignment > 10 arc-min. If the orthogonality error is very large, "
 "the mount is probably not guiding correctly."
-msgstr ""
+msgstr "赤道仪在一个轴上偏离目标，而 PHD2 在另一个轴上测量位移。这可能由赤经周期误差过大或极轴校准误差超过 10 角分造成。如果正交误差非常大，赤道仪很可能没有正确导星。"
 
 #: calibration_assistant.cpp:1298
 msgid "Sky Location"
-msgstr ""
+msgstr "天空位置"
 
 #: calibration_assistant.cpp:1302
 msgid ""
@@ -838,11 +838,11 @@ msgid ""
 "range, measurement errors may degrade the calibration accuracy. If Dec is "
 "outside the range of -60 to +60, declination compensation will not work "
 "correctly."
-msgstr ""
+msgstr "校准时的赤纬不在 -20 到 +20 范围内。超出该范围时，测量误差可能降低校准精度。如果赤纬超出 -60 到 +60 范围，赤纬补偿将无法正确工作。"
 
 #: calibration_assistant.cpp:1312
 msgid "Not Enough Movement"
-msgstr ""
+msgstr "移动量不足"
 
 #: calibration_assistant.cpp:1315
 msgid ""
@@ -850,11 +850,11 @@ msgid ""
 "not be receiving or handling guide commands. If you are using an ST-4 guide "
 "cable, try replacing it. Otherwise, use the Star-Cross and Manual Guide "
 "tools in PHD2 to help isolate the mechanical problem."
-msgstr ""
+msgstr "如果你看到提示说导星移动量不足，赤道仪可能没有收到或处理导星指令。如果使用 ST-4 导星线，试着更换一根。否则使用 PHD2 的十字星点移动测试和手动引导工具来定位机械问题。"
 
 #: calreview_dialog.cpp:47 statswindow.cpp:310 statswindow.cpp:330
 msgid "N/A"
-msgstr "无"
+msgstr "不适用"
 
 #: calreview_dialog.cpp:129 calreview_dialog.cpp:134 mount.cpp:221
 #: scope_manual_pointing.cpp:133
@@ -1060,7 +1060,7 @@ msgstr ""
 msgid ""
 "Details for this calibration result are no longer available. The calibration "
 "has probably been replaced."
-msgstr ""
+msgstr "本次校准结果的详细信息已不可用。该校准可能已被替换。"
 
 #: calreview_dialog.cpp:664
 msgid "Explanation"
@@ -1258,30 +1258,30 @@ msgstr "像素尺寸必须大于等于0."
 
 #: cam_alpaca.cpp:279
 msgid "Could not connect to the Alpaca camera. See the debug log for details."
-msgstr ""
+msgstr "无法连接 Alpaca 相机。详见调试日志。"
 
 #: cam_alpaca.cpp:618
 msgid "The Alpaca camera capture failed. See the debug log for details."
-msgstr ""
+msgstr "Alpaca 相机拍摄失败。详见调试日志。"
 
 #: cam_alpaca.cpp:728
 msgid "Alpaca camera reported an exposure error."
-msgstr ""
+msgstr "Alpaca 相机报告曝光错误。"
 
 #: cam_alpaca.cpp:820
 msgid "Alpaca camera returned a frame that does not match the requested size."
-msgstr ""
+msgstr "Alpaca 相机返回的画面尺寸与请求的不一致。"
 
 #: cam_alpaca.cpp:940
 msgid ""
 "Alpaca driver failed checking IsPulseGuiding. See the debug log for more "
 "information."
-msgstr ""
+msgstr "Alpaca 驱动检查 IsPulseGuiding 失败。详见调试日志获取更多信息。"
 
 #: cam_alpaca.cpp:1015
 #, c-format
 msgid "Alpaca error turning camera cooler %s"
-msgstr ""
+msgstr "Alpaca 相机制冷开关出错 %s"
 
 #: cam_alpaca.cpp:1015 cam_ascom.cpp:845
 msgid "on"
@@ -1312,7 +1312,7 @@ msgstr "丢弃帧"
 msgid ""
 "Discard this many frames when capturing starts. Useful for preventing "
 "initial under-exposed frames interfering with automatic star selection."
-msgstr ""
+msgstr "开始拍摄时丢弃这么多帧。可防止最初几张曝光不足的帧干扰自动选星。"
 
 #: cam_altair.cpp:331
 msgid "No Altair cameras detected"
@@ -1320,7 +1320,7 @@ msgstr "未检测到Altair相机"
 
 #: cam_altair.cpp:349
 msgid "Specified Altair Camera not found."
-msgstr "未找到指定的Alltair相机。"
+msgstr "未找到指定的Altair相机。"
 
 #: cam_altair.cpp:355
 msgid "Failed to open Altair Camera."
@@ -1544,13 +1544,13 @@ msgstr "将增益重置为相机的默认值（未连接相机时禁用）"
 
 #: camera.cpp:1013
 msgid "Enable software binning"
-msgstr ""
+msgstr "启用软件像素合并"
 
 #: camera.cpp:1014
 msgid ""
 "Can be used to increase binning beyond camera hardware/driver limits. Try to "
 "keep the guider image scale > 0.5 arc-sec/px."
-msgstr ""
+msgstr "可用于超出相机硬件/驱动限制的像素合并。尽量保持导星分辨率大于 0.5 角秒/像素。"
 
 #: camera.cpp:1028
 msgid "Cooler On"
@@ -1598,7 +1598,7 @@ msgstr "根据轮廓识别星点饱和度，无论亮度如何"
 msgid ""
 "Disconnect nonresponsive   \n"
 " camera after (seconds)"
-msgstr ""
+msgstr "断开无响应\n的相机（秒）"
 
 #: camera.cpp:1062
 #, c-format
@@ -1724,7 +1724,7 @@ msgstr "未找到 火线 /IEEE1394相机"
 
 #: cam_firewire_OSX.cpp:113
 msgid "Select Firewire camera"
-msgstr ""
+msgstr "选择 Firewire 相机"
 
 #: cam_firewire_OSX.cpp:113 cam_sbig.cpp:204
 msgid "Camera name"
@@ -1784,11 +1784,11 @@ msgstr "FITS文件不是一个图像"
 
 #: cam_indi.cpp:871
 msgid "RGB images are not supported, please switch the INDI driver to Mono"
-msgstr ""
+msgstr "不支持 RGB 图像，请把 INDI 驱动切换到单色（Mono）"
 
 #: cam_indi.cpp:877
 msgid "Unsupported FITS file"
-msgstr ""
+msgstr "不支持的 FITS 文件"
 
 #: cam_indi.cpp:908 cam_indi.cpp:938 gear_simulator.cpp:742
 #: gear_simulator.cpp:1687
@@ -1870,12 +1870,12 @@ msgstr "不能打开LXUSB设备"
 
 #: cam_LELXUSBWebcam.cpp:232
 msgid "USB LE Webcam"
-msgstr ""
+msgstr "USB LE 网络摄像头"
 
 #: cam_LELXUSBWebcam.cpp:240 cam_LEParallelWebcam.cpp:268
 #: cam_LESerialWebcam.cpp:382
 msgid "LE Read Delay (ms). Adjust if you get dropped frames"
-msgstr ""
+msgstr "LE 读取延迟（毫秒）。如果出现丢帧请调整"
 
 #: cam_LELXUSBWebcam.cpp:242 cam_LEParallelWebcam.cpp:270
 #: cam_LESerialWebcam.cpp:384
@@ -1888,7 +1888,7 @@ msgstr "摄像头设置"
 
 #: cam_LEParallelWebcam.cpp:234
 msgid "Parallel LE Webcam"
-msgstr ""
+msgstr "并口 LE 网络摄像头"
 
 #: cam_LEParallelWebcam.cpp:255
 msgid "Custom Port Address:"
@@ -1976,11 +1976,11 @@ msgstr "未知"
 
 #: cam_ogma.cpp:312
 msgid "No OGMA cameras detected"
-msgstr ""
+msgstr "未检测到 OGMA 相机"
 
 #: cam_ogma.cpp:332
 msgid "Selected OGMA camera not found."
-msgstr ""
+msgstr "找不到选中的 OGMA 相机。"
 
 #: cam_ogma.cpp:337 cam_touptek.cpp:338
 msgid "Camera does not support software trigger"
@@ -1988,11 +1988,11 @@ msgstr "相机不支持软触发"
 
 #: cam_ogma.cpp:343
 msgid "Failed to open OGMA camera."
-msgstr ""
+msgstr "无法打开 OGMA 相机。"
 
 #: cam_ogma.cpp:366
 msgid "Failed to get camera resolution for OGMA camera."
-msgstr ""
+msgstr "无法获取 OGMA 相机的分辨率。"
 
 #: cam_ogma.cpp:374 cam_ogma.cpp:387 cam_touptek.cpp:375 cam_touptek.cpp:388
 msgid "Failed to initialize camera binning."
@@ -2016,7 +2016,7 @@ msgstr "曝光失败：不能从相机读取图像"
 
 #: cam_ogma.cpp:783
 msgid "Ogma Camera Properties"
-msgstr ""
+msgstr "OGMA 相机属性"
 
 #: cam_openssag.cpp:111 cam_qhy5.cpp:114
 msgid "Could not initialize USB library"
@@ -2062,7 +2062,7 @@ msgstr "无法开始曝光"
 
 #: cam_playerone.cpp:148
 msgid "Player One Camera Properties"
-msgstr ""
+msgstr "Player One 相机属性"
 
 #: cam_playerone.cpp:219 cam_zwo.cpp:220
 #, c-format
@@ -2071,24 +2071,24 @@ msgstr "不能装载动态库 %s"
 
 #: cam_playerone.cpp:313
 msgid "No Player One cameras detected."
-msgstr ""
+msgstr "未检测到 Player One 相机。"
 
 #: cam_playerone.cpp:344
 #, c-format
 msgid "Player One camera #%d not found"
-msgstr ""
+msgstr "未找到 Player One 相机 #%d"
 
 #: cam_playerone.cpp:407 cam_playerone.cpp:480
 msgid "Failed to get camera properties for Player One Camera."
-msgstr ""
+msgstr "无法获取 Player One 相机的属性。"
 
 #: cam_playerone.cpp:413
 msgid "Failed to open Player One Camera."
-msgstr ""
+msgstr "无法打开 Player One 相机。"
 
 #: cam_playerone.cpp:420
 msgid "Failed to initialize Player One Camera."
-msgstr ""
+msgstr "无法初始化 Player One 相机。"
 
 #: cam_playerone.cpp:876 cam_playerone.cpp:908 cam_playerone.cpp:916
 #: cam_svb.cpp:772 cam_sxv.cpp:924 cam_zwo.cpp:942 cam_zwo.cpp:973
@@ -2102,49 +2102,49 @@ msgstr "无相机"
 
 #: cam_qhy.cpp:338
 msgid "Camera Options"
-msgstr ""
+msgstr "相机选项"
 
 #: cam_qhy.cpp:343
 msgid ""
 "The actual gain level the camera is operating at. Gain level is set as a "
 "percentage of the camera's maximum possible gain level in Advanced Settings "
 "> Camera > Camera gain. Knowing the gain assists in setting the offset value."
-msgstr ""
+msgstr "相机当前实际工作的增益值。增益值按相机可达最大增益的百分比设置，位置在高级设置 > 相机 > 相机增益。知道增益值有助于设置偏移值。"
 
 #: cam_qhy.cpp:350
 msgid "Offset"
-msgstr ""
+msgstr "偏移"
 
 #: cam_qhy.cpp:355
 msgid "USB Traffic"
-msgstr ""
+msgstr "USB 传输"
 
 #: cam_qhy.cpp:359
 msgid "Amplifier noise reduction"
-msgstr ""
+msgstr "放大器降噪"
 
 #: cam_qhy.cpp:362
 msgid "Row noise reduction"
-msgstr ""
+msgstr "行降噪"
 
 #: cam_qhy.cpp:365
 msgid "High speed mode"
-msgstr ""
+msgstr "高速模式"
 
 #: cam_qhy.cpp:368
 msgid "High gain mode"
-msgstr ""
+msgstr "高增益模式"
 
 #: cam_qhy.cpp:370
 msgid ""
 "Sets a QHY5III178 or QHY178 to operate the sensor in the high conversion "
 "gain mode. This usually means lower noise and a shallower pixel well than "
 "the equivalent gain value in low conversion gain mode"
-msgstr ""
+msgstr "让 QHY5III178 或 QHY178 以高转换增益模式工作传感器。与低转换增益模式下相同增益值相比，这通常意味着噪声更低、满阱容量更小"
 
 #: cam_qhy.cpp:480
 msgid "Camera must be reconnected to set the new mode"
-msgstr ""
+msgstr "需要重新连接相机才能设置新模式"
 
 #: cam_qhy.cpp:584
 msgid "Failed to initialize QHY SDK"
@@ -2176,7 +2176,7 @@ msgstr "无法获取相机芯片信息"
 
 #: cam_qhy.cpp:754
 msgid "Failed to set bit mode"
-msgstr ""
+msgstr "无法设置位模式"
 
 #: cam_qhy.cpp:822
 msgid "Failed to get camera bin info"
@@ -2192,31 +2192,31 @@ msgstr "无法设置相机增益"
 
 #: cam_qhy.cpp:1032
 msgid "Failed to set camera offset"
-msgstr ""
+msgstr "无法设置相机偏移"
 
 #: cam_qhy.cpp:1041
 msgid "Failed to set camera USB traffic"
-msgstr ""
+msgstr "无法设置相机 USB 传输"
 
 #: cam_qhy.cpp:1050
 msgid "Failed to set camera amp noise reduction"
-msgstr ""
+msgstr "无法设置相机放大器降噪"
 
 #: cam_qhy.cpp:1059
 msgid "Failed to set camera row noise reduction"
-msgstr ""
+msgstr "无法设置相机行降噪"
 
 #: cam_qhy.cpp:1068
 msgid "Failed to set camera speed mode"
-msgstr ""
+msgstr "无法设置相机速度模式"
 
 #: cam_qhy.cpp:1077
 msgid "Failed to set camera high gain mode"
-msgstr ""
+msgstr "无法设置相机高增益模式"
 
 #: cam_qhy.cpp:1088
 msgid "Failed to set camera exposure length"
-msgstr ""
+msgstr "无法设置相机曝光时长"
 
 #: cam_qhy.cpp:1095
 msgid "QHY exposure failed"
@@ -2427,7 +2427,7 @@ msgstr "无法获取ToupTek相机的分辨率。"
 
 #: cam_touptek.cpp:631
 msgid "Capture failed: the camera reported an error"
-msgstr ""
+msgstr "拍摄失败：相机报告了一个错误"
 
 #: cam_touptek.cpp:791
 msgid "ToupTek Camera Properties"
@@ -2490,7 +2490,7 @@ msgstr "打开振旺ASI相机失败。"
 
 #: cam_zwo.cpp:425
 msgid "Failed to initialize ZWO ASI Camera."
-msgstr ""
+msgstr "无法初始化 ZWO ASI 相机。"
 
 #: comdispatch.cpp:48
 msgid "A COM Error occurred. There may be more info in the Debug Log."
@@ -2831,7 +2831,7 @@ msgstr "可以自由备注，将记录在每个暗场文件的FITs头当中，�
 #: darks_dialog.cpp:211
 msgid ""
 "Be sure camera bit-depth is already set to desired value (8-bit or 16-bit)"
-msgstr ""
+msgstr "请确认相机位深已设为需要的值（8 位或 16 位）"
 
 #: darks_dialog.cpp:222
 msgid "Reset all parameters to application defaults"
@@ -2869,7 +2869,7 @@ msgstr "暗场库已创建"
 
 #: darks_dialog.cpp:337
 msgid "Taking darks to compute defect map: "
-msgstr "拍摄暗场用来计算坏点图："
+msgstr "拍摄暗场用来计算坏点图： "
 
 #: darks_dialog.cpp:350
 msgid "Operation cancelled"
@@ -4059,7 +4059,7 @@ msgstr "预测性导星修正强度百分比。默认值 = %.f%%，请根据实�
 
 #: guide_algorithm_gaussian_process.cpp:242
 msgid "PredWt"
-msgstr "PredWt"
+msgstr "预测强度"
 
 #: guide_algorithm_gaussian_process.cpp:248
 #: guide_algorithm_gaussian_process.cpp:333
@@ -4071,7 +4071,7 @@ msgstr "适应性导星修正强度百分比。默认值 = %.f%%，请根据实�
 
 #: guide_algorithm_gaussian_process.cpp:253
 msgid "ReactWt"
-msgstr "ReactWt"
+msgstr "反应强度"
 
 #: guide_algorithm_gaussian_process.cpp:261
 #: guide_algorithm_gaussian_process.cpp:342
@@ -4089,7 +4089,7 @@ msgstr ""
 #: guide_algorithm_lowpass2.cpp:306 guide_algorithm_lowpass.cpp:285
 #: guide_algorithm_resistswitch.cpp:391 guide_algorithm_zfilter.cpp:355
 msgid "MnMo"
-msgstr "侦"
+msgstr "最小移动"
 
 #: guide_algorithm_gaussian_process.cpp:317
 msgid "Predictive PEC Guide Algorithm"
@@ -4212,11 +4212,11 @@ msgstr "修正强度百分比。默认值 = %.f%%"
 
 #: guide_algorithm_hysteresis.cpp:308
 msgid "Agr"
-msgstr "修"
+msgstr "修正强度"
 
 #: guide_algorithm_hysteresis.cpp:319
 msgid "Hys"
-msgstr "滞"
+msgstr "滞后"
 
 #: guide_algorithm_identity.cpp:71
 msgid "Guide Algorithm"
@@ -4239,7 +4239,7 @@ msgstr "修正强度百分比。默认值 = %.f%%"
 
 #: guide_algorithm_lowpass2.cpp:294
 msgid "Agg"
-msgstr "修"
+msgstr "修正强度"
 
 #: guide_algorithm_lowpass.cpp:202
 msgid "Lowpass Guide Algorithm"
@@ -4247,7 +4247,7 @@ msgstr "低通导星算法"
 
 #: guide_algorithm_lowpass.cpp:213
 msgid "Slope Weight"
-msgstr "*Slope Weight*"
+msgstr "斜率权重"
 
 #: guide_algorithm_lowpass.cpp:214 guide_algorithm_lowpass.cpp:270
 #, c-format
@@ -4256,7 +4256,7 @@ msgstr "赤纬“低通”算法的加权值。默认值 = %.1f"
 
 #: guide_algorithm_lowpass.cpp:273
 msgid "Sl W"
-msgstr "南| 西"
+msgstr "斜率权重"
 
 #: guide_algorithm_resistswitch.cpp:298
 msgid "ResistSwitch Guide Algorithm"
@@ -4301,7 +4301,7 @@ msgstr "乘以曝光时间得出滤镜后的等效曝光时间。 默认值 = %.
 
 #: guide_algorithm_zfilter.cpp:341
 msgid "XFac"
-msgstr "XFac"
+msgstr "曝光因子"
 
 #: guider.cpp:581
 msgid "E"
@@ -4537,7 +4537,7 @@ msgstr ""
 
 #: guider_multistar.cpp:1430
 msgid "Maximum star HFD (pixels)"
-msgstr ""
+msgstr "最大星点HFD（像素）"
 
 #: guider_multistar.cpp:1431
 msgid ""
@@ -4545,7 +4545,7 @@ msgid ""
 "setting can be used to prevent PHD2 from choosing a large clump of sensor "
 "noise, adjacent faint stars, internal reflections, or comet heads as guide "
 "stars."
-msgstr ""
+msgstr "用于选定导星的最大星点 HFD。此设置可防止 PHD2 把一大团传感器噪声、相邻的暗星、内部反光或彗星头部选为导星。"
 
 #: guider_multistar.cpp:1435 myframe.cpp:901 myframe.cpp:972 scope.cpp:277
 msgid "Auto"
@@ -4618,7 +4618,7 @@ msgstr "正在进行额外的采样以进行精确测量。 采样完成后将�
 
 #: guiding_assistant.cpp:115
 msgid "Seconds remaining: "
-msgstr "剩下的秒数："
+msgstr "剩下的秒数： "
 
 #: guiding_assistant.cpp:347
 msgid "Guiding Assistant"
@@ -4879,29 +4879,29 @@ msgstr " "
 #: guiding_assistant.cpp:1352 guiding_assistant.cpp:1868
 #: guiding_assistant.cpp:1953
 msgid "s"
-msgstr "南"
+msgstr "秒"
 
 #: guiding_assistant.cpp:1393
 #, c-format
 msgid "Use exposure times in the range of %.1fs to %.1fs"
-msgstr ""
+msgstr "曝光时间应在 %.1f 秒到 %.1f 秒之间"
 
 #: guiding_assistant.cpp:1395
 #, c-format
 msgid ""
 "Use exposure times from %.1fs to %0.1fs and variable delay feature to "
 "control guide cadence"
-msgstr ""
+msgstr "使用 %.1f 到 %.1f 秒的曝光时间，并用可变延时功能控制导星节奏"
 
 #: guiding_assistant.cpp:1406
 #, c-format
 msgid ""
 "Make a new profile and set binning to %d. Use software binning if necessary"
-msgstr ""
+msgstr "新建配置文件并把像素合并设为 %d，必要时使用软件像素合并"
 
 #: guiding_assistant.cpp:1416
 msgid "Consider re-doing your calibration "
-msgstr "请考虑重做校准"
+msgstr "请考虑重做校准 "
 
 #: guiding_assistant.cpp:1418
 msgid "(Prior alert)"
@@ -5456,11 +5456,11 @@ msgstr "自动选择被导星"
 
 #: myframe.cpp:481 myframe_events.cpp:1060 myframe_events.cpp:1067
 msgid "Calibration Assistant..."
-msgstr ""
+msgstr "校准助手..."
 
 #: myframe.cpp:481
 msgid "Slew to a preferred calibration position"
-msgstr ""
+msgstr "指向到首选的校准位置"
 
 #: myframe.cpp:482
 msgid "&Review Calibration Data\tAlt-C"
@@ -5552,7 +5552,7 @@ msgstr "精确极轴漂移校准"
 
 #: myframe.cpp:501
 msgid "Align by analyzing star drift near the celestial equator (Accurate)"
-msgstr ""
+msgstr "通过分析天赤道附近的星点漂移情况来对准极轴（精确）"
 
 #: myframe.cpp:502
 msgid "&Polar Drift Align"
@@ -5560,7 +5560,7 @@ msgstr "简单极轴漂移校准"
 
 #: myframe.cpp:503
 msgid "Align by analyzing star drift near the celestial pole (Simple)"
-msgstr ""
+msgstr "通过分析天极点附近的星点漂移情况来对准极轴（简单）"
 
 #: myframe.cpp:504
 msgid "&Static Polar Align"
@@ -5624,7 +5624,7 @@ msgstr "显示散点图"
 
 #: myframe.cpp:516
 msgid "Enable / disable target"
-msgstr "启用 / 禁用 散点图"
+msgstr "启用 / 禁用星点质心分布"
 
 #: myframe.cpp:517
 msgid "Display Star &Profile"
@@ -6029,7 +6029,7 @@ msgstr "保存暗场FITS文件 %s 错误"
 msgid ""
 "Binning or camera pixel size changed unexpectedly. You should use separate "
 "profiles for different image scales."
-msgstr ""
+msgstr "像素合并或相机像素尺寸意外改变了。 不同的成像尺度应使用各自的配置文件。"
 
 #: myframe.cpp:2938
 msgid "Global Settings"
@@ -6038,7 +6038,7 @@ msgstr "全局设置"
 #: myframe.cpp:2985
 #, c-format
 msgid "Enter a focal length in millimeters, between %.f and %.f"
-msgstr ""
+msgstr "请输入以毫米为单位的焦距，范围在 %.f 到 %.f 之间"
 
 #: myframe.cpp:3035 myframe.cpp:3120
 msgid "System default"
@@ -6296,11 +6296,11 @@ msgstr "自动曝光最大时间"
 
 #: myframe.cpp:3269
 msgid "Target SNR"
-msgstr "信噪比"
+msgstr "目标信噪比"
 
 #: myframe.cpp:3269
 msgid "Auto exposure target SNR value"
-msgstr "自动曝光SNR值"
+msgstr "自动曝光的目标信噪比数值"
 
 #: myframe.cpp:3271
 msgid "Auto Exposure"
@@ -6532,33 +6532,33 @@ msgstr ""
 msgid ""
 "Scope isn't pointing in recommended sky area for calibration - run the "
 "Calibration Assistant to improve results."
-msgstr ""
+msgstr "望远镜没有指向推荐校准的天空区域——运行校准助手以改善结果。"
 
 #: myframe_events.cpp:1060 myframe_events.cpp:1067
 msgid "Calibrate here"
-msgstr ""
+msgstr "在此校准"
 
 #: myframe_events.cpp:1063
 msgid ""
 "With the scope pointing this close to the pole, calibration can be degraded "
 "and may "
-msgstr ""
+msgstr "望远镜指向位置离天极这么近，校准质量可能下降，甚至"
 
 #: myframe_events.cpp:1064
 msgid ""
 "fail altogether.  Run the Calibration Assistant and follow the instructions "
 "to eliminate these risks, "
-msgstr ""
+msgstr "完全失败。请运行校准助手并按其说明操作，以消除这些风险，"
 
 #: myframe_events.cpp:1066
 msgid ""
 "including slewing the scope as close as practical to the recommended "
 "position."
-msgstr ""
+msgstr "包括把望远镜指向尽量接近推荐位置。"
 
 #: myframe_events.cpp:1114
 msgid "Are you sure you want to force recalibration?"
-msgstr ""
+msgstr "确定要强制重新校准吗？"
 
 #: myframe_events.cpp:1115
 msgid "Force Recalibration"
@@ -7095,7 +7095,7 @@ msgstr "蜗轮"
 
 #: profile_wizard.cpp:273
 msgid "Device Id:"
-msgstr ""
+msgstr "设备 ID："
 
 #: profile_wizard.cpp:287
 msgid ""
@@ -7116,17 +7116,17 @@ msgid ""
 "If your camera supports binning (many do not), you can choose a binning "
 "value > 1.  Binning can keep your guider image scale above 0.5 arc-sec/px "
 "and with CCD-based   guide cameras, may allow use of fainter guide stars."
-msgstr ""
+msgstr "如果你的相机支持像素合并（很多相机不支持），可以选择大于 1 的合并值。像素合并可以让导星分辨率保持在 0.5 角秒/像素以上，对 CCD 导星相机来说还可能可以使用更暗的导星。"
 
 #: profile_wizard.cpp:300
 msgid "Show software binning"
-msgstr ""
+msgstr "显示软件像素合并选项"
 
 #: profile_wizard.cpp:302
 msgid ""
 "Show options for binning beyond camera hardware/driver limits. Try to keep "
 "the guider image scale > 0.5 arc-sec/px."
-msgstr ""
+msgstr "显示超出相机硬件/驱动限制的像素合并选项。尽量保持导星分辨率大于 0.5 角秒/像素。"
 
 #: profile_wizard.cpp:306
 msgid "Binning level"
@@ -7138,7 +7138,7 @@ msgid ""
 "are using an off-axis-guider or adaptive optics device (Focal length = "
 "aperture x f-ratio).  Typical finder scopes have a focal length of about "
 "165mm. Recommended minimum is 100mm"
-msgstr ""
+msgstr "这是导星镜的焦距——如果使用同轴导星器（OAG）或自适应光学设备，则是成像镜的焦距（焦距 = 口径 x 焦比）。典型寻星镜的焦距约 165 毫米。推荐最小值 100 毫米"
 
 #: profile_wizard.cpp:325
 msgid "Guide scope focal length (mm)"
@@ -7146,7 +7146,7 @@ msgstr "导星镜焦距(毫米)"
 
 #: profile_wizard.cpp:326
 msgid "Focal length less than recommended minimum (100mm)"
-msgstr ""
+msgstr "焦距低于推荐最小值（100mm）"
 
 #: profile_wizard.cpp:342 profile_wizard.cpp:1483 profile_wizard.cpp:1503
 #, c-format
@@ -7174,7 +7174,7 @@ msgstr "赤道仪导星速率 (n.n x 恒星时)"
 
 #: profile_wizard.cpp:364
 msgid "Mount has high-precision encoders on both axes"
-msgstr ""
+msgstr "赤道仪在两轴上都有高精度编码器"
 
 #: profile_wizard.cpp:365
 msgid ""
@@ -7316,7 +7316,7 @@ msgid ""
 "when the rotator is moved.  Otherwise any change in rotator position will "
 "require a re-calibration in PHD2. PHD2 NEVER sets options in the rotator "
 "software or changes the rotator position."
-msgstr ""
+msgstr "如果你有旋转导星相机或 OAG 的旋转器设备，可在此选择。这样 PHD2 会在旋转器移动时自动调整校准。否则旋转器位置的任何变化都需要在 PHD2 中重新校准。PHD2 绝不会设置旋转器软件的选项，也不会改变旋转器位置。"
 
 #: profile_wizard.cpp:507
 msgid ""
@@ -7375,19 +7375,19 @@ msgstr "不再询问"
 
 #: profile_wizard.cpp:662
 msgid "Specify camera, guider focal length, and guide camera pixel size"
-msgstr ""
+msgstr "指定相机、导星焦距和导星相机像素尺寸"
 
 #: profile_wizard.cpp:688
 msgid "Select a mount type to handle guide commands"
-msgstr ""
+msgstr "选择用于处理导星指令的赤道仪类型"
 
 #: profile_wizard.cpp:719
 msgid "Specify a name for the profile."
-msgstr ""
+msgstr "为配置文件指定一个名称。"
 
 #: profile_wizard.cpp:723
 msgid "Choose a profile name not already in use "
-msgstr ""
+msgstr "选择一个未被使用的配置文件名称 "
 
 #: profile_wizard.cpp:767
 msgid "Welcome to the PHD2 'first light' wizard"
@@ -7486,14 +7486,14 @@ msgid ""
 "No cameras of that type were found, so you may want to deal with that later. "
 "In the meantime, you can just enter the pixel-size manually along with the "
 "focal length and binning levels."
-msgstr ""
+msgstr "没有找到该类型的相机，你可以稍后再处理。目前可以手工输入像素尺寸，以及焦距和像素合并等级。"
 
 #: profile_wizard.cpp:952
 msgid ""
 "PHD2 could not connect to the camera, so you may want to deal with that "
 "later. In the meantime, you can just enter the pixel-size manually along "
 "with the focal length and binning levels."
-msgstr ""
+msgstr "PHD2 无法连接相机，你可以稍后再处理。目前可以手工输入像素尺寸，以及焦距和像素合并等级。"
 
 #: profile_wizard.cpp:1229
 msgid "Ask"
@@ -7537,7 +7537,7 @@ msgstr ""
 
 #: profile_wizard.cpp:1504
 msgid "Binning has been increased to achieve pixel scale > 0.5"
-msgstr ""
+msgstr "已提高像素合并等级以达到大于 0.5 的像素尺度"
 
 #: profile_wizard.cpp:1514
 msgid ""
@@ -7814,39 +7814,39 @@ msgid ""
 "For compatability purposes, PHD2 can internally reverse the sign of the "
 "position angle reported by the rotator. This only affects calculations "
 "within PHD2, it has no effect on the rotator operation."
-msgstr ""
+msgstr "为了兼容性，PHD2 可以在内部反转旋转器上报位置角的正负号。这只影响 PHD2 内部的计算，不影响旋转器的运行。"
 
 #: rotator_indi.cpp:115
 msgid "INDI Rotator is ready\n"
-msgstr ""
+msgstr "INDI 旋转器已就绪\n"
 
 #: rotator_indi.cpp:252
 msgid "INDI Rotator Selection"
-msgstr ""
+msgstr "INDI 旋转器选择"
 
 #: rotator_indi.cpp:309
 #, c-format
 msgid "INDI Rotator found ABS_ROTATOR_ANGLE for %s %s\n"
-msgstr ""
+msgstr "INDI 旋转器找到 ABS_ROTATOR_ANGLE：%s %s\n"
 
 #: rotator_indi.cpp:323
 #, c-format
 msgid "INDI Rotator found CONNECTION for %s %s\n"
-msgstr ""
+msgstr "INDI 旋转器找到 CONNECTION：%s %s\n"
 
 #: rotator_indi.cpp:339
 #, c-format
 msgid "INDI Rotator received message: %s\n"
-msgstr ""
+msgstr "INDI 旋转器收到消息：%s\n"
 
 #: rotator_indi.cpp:378
 msgid "INDI rotator was disconnected"
-msgstr ""
+msgstr "INDI 旋转器已断开"
 
 #: rotator_indi.cpp:391
 #, c-format
 msgid "INDI Rotator: New number: %s\n"
-msgstr ""
+msgstr "INDI 旋转器：新编号：%s\n"
 
 #: runinbg.cpp:110
 msgid "The operation was canceled"
@@ -7856,15 +7856,15 @@ msgstr "操作已取消"
 msgid ""
 "Could not connect to the Alpaca mount. See the debug log for more "
 "information."
-msgstr ""
+msgstr "无法连接 Alpaca 赤道仪。详见调试日志获取更多信息。"
 
 #: scope_alpaca.cpp:396
 msgid "No Alpaca telescope found via configuration or discovery"
-msgstr ""
+msgstr "通过配置或搜索都没有找到 Alpaca 望远镜"
 
 #: scope_alpaca.cpp:409
 msgid "Could not connect to the Alpaca mount. See the debug log for details."
-msgstr ""
+msgstr "无法连接 Alpaca 赤道仪。详见调试日志。"
 
 #: scope_alpaca.cpp:512 scope_ascom.cpp:785
 msgid ""
@@ -7962,7 +7962,7 @@ msgid ""
 "output option' on the Advanced Dialog guiding tab is wrong. If so, fix it "
 "and recalibrate.  Otherwise, check for cable snags, try re-doing your "
 "calibration, and check for problems with the mount mechanics."
-msgstr ""
+msgstr "PHD2 无法在赤纬方向做出足够的修正。如果赤道仪方位与你上次校准时所在的位置不同，检查高级设置对话框导星选项卡上的“反转赤纬输出”选项是否设错。如果设错，改正后重新校准。否则检查线缆是否被牵扯，尝试重新校准，并检查赤道仪机械部分的问题。"
 
 #: scope.cpp:693
 msgid ""
@@ -8089,7 +8089,9 @@ msgid ""
 "backlash. \n"
 "Check the guide cable and read the online Help for how to identify these "
 "types of problems (Manual Guide, Declination backlash)."
-msgstr ""
+msgstr "提示：校准成功，但几乎没有测到向南的移动，因此导星很可能受损。\n"
+    " 这通常是导星线故障或赤纬回差过大引起的。 \n"
+    "请检查导星线，并阅读在线帮助中说明如何识别这类问题的部分（手动引导、赤纬回差）。"
 
 #: scope.cpp:1676
 msgid ""
@@ -8242,7 +8244,8 @@ msgid ""
 "Longest length of pulse to send in declination\n"
 "Default = 2500 ms. NOTE: this will be ignored if backlash compensation is "
 "enabled"
-msgstr ""
+msgstr "发送至赤纬的最大脉冲时长\n"
+    "默认值 = 2500 毫秒。注意：如果启用回差补偿，此项将被忽略"
 
 #: scope.cpp:2169
 msgid "Dec guide mode"
@@ -8270,7 +8273,7 @@ msgstr "赤纬限长"
 
 #: scope_eqmac.cpp:185 scope_equinox.cpp:188
 msgid " responded it's not connected to a mount"
-msgstr "未能连接到赤道仪"
+msgstr " 未能连接到赤道仪"
 
 #: scope_eqmac.cpp:190 scope_equinox.cpp:193
 msgid " not running"
@@ -8563,11 +8566,11 @@ msgstr "平均 列"
 
 #: star_profile.cpp:317
 msgid "Click image for raw view"
-msgstr ""
+msgstr "单击图像查看原始视图"
 
 #: star_profile.cpp:322
 msgid "Click image for interpolated view"
-msgstr ""
+msgstr "单击图像查看插值视图"
 
 #: star_profile.cpp:355
 msgid "Peak"
@@ -8924,7 +8927,7 @@ msgstr ""
 
 #: stepguider.cpp:1475
 msgid "Cal steps"
-msgstr ""
+msgstr "校准步数"
 
 #: stepguider.cpp:1478
 #, c-format
@@ -8965,11 +8968,11 @@ msgstr "Bump步数"
 
 #: stepguider.cpp:1504
 msgid "Bump on dither"
-msgstr ""
+msgstr "抖动时 Bump"
 
 #: stepguider.cpp:1505
 msgid "Bump the mount to return the AO to center at each dither"
-msgstr ""
+msgstr "每次抖动时 Bump 赤道仪，使 AO 回到中心"
 
 #: stepguider.cpp:1507
 msgid "Clear AO calibration"
@@ -9164,7 +9167,7 @@ msgstr ""
 
 #: usImage.cpp:442
 msgid "File does not exist - cannot load "
-msgstr "文件不存在 - 不能读取"
+msgstr "文件不存在 - 不能读取 "
 
 #: usImage.cpp:453
 msgid "FITS file is not of an image: "
