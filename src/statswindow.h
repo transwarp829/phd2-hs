@@ -35,14 +35,19 @@
 #ifndef STATSWINDOW_INCLUDED
 #define STATSWINDOW_INCLUDED
 
+#include "stats_refresh_policy.h"
+
 class StatsWindow : public wxWindow
 {
+    struct FrameRateBackend;
     bool m_visible;
     wxGrid *m_grid1;
     wxGrid *m_grid2;
     int m_length;
     OptionsButton *m_pLengthButton;
     wxTimer m_coolerTimer;
+    wxTimer m_frameRateTimer;
+    StatsRefreshPolicy m_frameRateRefresh;
     int m_frameSizeRow;
     int m_pixelScaleRow;
     int m_coolerRow;
@@ -53,6 +58,7 @@ class StatsWindow : public wxWindow
     void OnMenuLength(wxCommandEvent&);
     void OnButtonClear(wxCommandEvent&);
     void OnTimerCooler(wxTimerEvent&);
+    void OnTimerFrameRate(wxTimerEvent&);
 
 public:
     StatsWindow(wxWindow *parent);
@@ -62,7 +68,6 @@ public:
     void UpdateScopePointing();
     void UpdateCooler();
     void UpdateImageSize(const wxSize& frameSize);
-    void UpdateFrameRate();
     void ResetImageSize();
     void SetState(bool is_active);
 

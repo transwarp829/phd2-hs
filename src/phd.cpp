@@ -677,6 +677,7 @@ int PhdApp::OnExit()
     delete m_instanceChecker;
     m_instanceChecker = nullptr;
 
+    Debug.Close();
     return wxApp::OnExit();
 }
 

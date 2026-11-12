@@ -494,6 +494,7 @@ private:
 
     wxSocketServer *SocketServer;
     wxTimer m_statusbarTimer;
+    wxTimer m_debugLogTimer;
 
     int m_exposureDuration;
     AutoExposureCfg m_autoExp;

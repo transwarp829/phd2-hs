@@ -19,6 +19,13 @@ foreach(camera qhy toup zwo)
     add_test(NAME ${camera}_capture_test COMMAND ${camera}_capture_test)
 endforeach()
 
+foreach(test_name debuglog log_upload stats_refresh)
+    add_executable(${test_name}_test ${test_name}_test.cpp)
+    target_include_directories(${test_name}_test PRIVATE ../src)
+    target_compile_features(${test_name}_test PRIVATE cxx_std_14)
+    add_test(NAME ${test_name}_test COMMAND ${test_name}_test)
+endforeach()
+
 option(PHD2_TEST_WXIMAGE "Test real wxImage pixels and native help loading" ON)
 set(PHD2_TEST_WX_SOURCE_DIR "" CACHE PATH "Optional wxWidgets source tree for standalone tests")
 if(PHD2_TEST_WXIMAGE)

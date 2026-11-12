@@ -414,10 +414,19 @@ MyFrame::MyFrame()
 
     // this forces force a resize of MainToolbar in case size changed from the saved perspective
     MainToolbar->Realize();
+
+    // Drain a quiet log's buffered tail as well as logs with continuous writes.
+    // Keep filesystem flushing out of the per-frame guide update path.
+    m_debugLogTimer.SetOwner(this);
+    Bind(wxEVT_TIMER, [](wxTimerEvent&) { Debug.FlushIfDue(); }, m_debugLogTimer.GetId());
+    m_debugLogTimer.Start(500);
 }
 
 MyFrame::~MyFrame()
 {
+    m_debugLogTimer.Stop();
+    Debug.Flush();
+
     delete pGearDialog;
     pGearDialog = nullptr;
 

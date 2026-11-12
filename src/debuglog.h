@@ -37,13 +37,23 @@
 #define DEBUGLOG_INCLUDED
 
 #include "logger.h"
+#include "debuglog_buffer.h"
+#include <atomic>
 
 class DebugLog : public wxFFile, public Logger
 {
-    bool m_enabled;
+    std::atomic<bool> m_enabled;
     wxCriticalSection m_criticalSection;
     wxDateTime m_lastWriteTime;
-    wxString m_path;
+    wxString m_path; // base filename; the open wxFFile may be a numbered part
+    unsigned int m_part;
+    debuglog::Buffer m_buffer;
+    bool m_ioErrorReported;
+
+    friend struct DebugLogFiles;
+    bool FlushLocked();
+    bool CloseLocked();
+    void ReportIOError(const char *operation);
 
 public:
     DebugLog();
@@ -58,6 +68,9 @@ public:
     wxString AddBytes(const wxString& str, const unsigned char *bytes, unsigned count);
     wxString Write(const wxString& str);
     bool Flush();
+    bool FlushToDisk(); // flush under the same lock as rotation before upload
+    bool FlushIfDue(); // called periodically even while no new records arrive
+    bool Close();
 
     bool ChangeDirLog(const wxString& newdir) override;
     void RemoveOldFiles();
@@ -70,7 +83,7 @@ extern DebugLog& operator<<(DebugLog& out, const double d);
 
 inline bool DebugLog::IsEnabled() const
 {
-    return m_enabled;
+    return m_enabled.load();
 }
 
 extern DebugLog Debug;

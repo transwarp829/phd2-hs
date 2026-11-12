@@ -55,6 +55,12 @@ python tests/help_translation_test.py --cmake cmake
   failures without incorrectly marking the stream as running.
 - Star profile: switching raw/interpolated mode and resizing cannot mutate
   the shared source crop.
+- Logging: byte/time flush thresholds, idle tails, explicit flush, record-boundary
+  rotation, existing files, oversized records, failure fallback and real stdio I/O.
+- Upload: every numbered volume stays with its session/instance, including parts
+  created after selection; missing selected files are retained for error reporting.
+- Statistics: visibility controls timer lifetime, refreshes are limited to 4 Hz,
+  unchanged text is not painted, and stopped capture clears the display.
 
 These checks validate software ordering and state, not undocumented SDK or
 camera firmware behavior. Hardware validation is still needed for actual

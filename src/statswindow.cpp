@@ -35,9 +35,12 @@
 #include "phd.h"
 #include "statswindow.h"
 
+#include <chrono>
+
 enum
 {
     TIMER_ID_COOLER = 101,
+    TIMER_ID_FRAME_RATE,
 };
 
 // clang-format off
@@ -46,11 +49,13 @@ wxBEGIN_EVENT_TABLE(StatsWindow, wxWindow)
     EVT_MENU_RANGE(MENU_LENGTH_BEGIN, MENU_LENGTH_END, StatsWindow::OnMenuLength)
     EVT_BUTTON(BUTTON_GRAPH_CLEAR, StatsWindow::OnButtonClear)
     EVT_TIMER(TIMER_ID_COOLER, StatsWindow::OnTimerCooler)
+    EVT_TIMER(TIMER_ID_FRAME_RATE, StatsWindow::OnTimerFrameRate)
 wxEND_EVENT_TABLE();
 // clang-format on
 
 StatsWindow::StatsWindow(wxWindow *parent)
-    : wxWindow(parent, wxID_ANY), m_visible(false), m_coolerTimer(this, TIMER_ID_COOLER), m_lastFrameSize(wxDefaultSize)
+    : wxWindow(parent, wxID_ANY), m_visible(false), m_coolerTimer(this, TIMER_ID_COOLER),
+      m_frameRateTimer(this, TIMER_ID_FRAME_RATE), m_lastFrameSize(wxDefaultSize)
 {
     SetBackgroundColour(*wxBLACK);
 
@@ -158,11 +163,46 @@ StatsWindow::StatsWindow(wxWindow *parent)
     SetSizerAndFit(sizer2);
 }
 
-StatsWindow::~StatsWindow(void) { }
+struct StatsWindow::FrameRateBackend
+{
+    StatsWindow& window;
+
+    std::int64_t NowMs() const
+    {
+        return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch())
+            .count();
+    }
+    void StartTimer(int intervalMs) { window.m_frameRateTimer.Start(intervalMs); }
+    void StopTimer() { window.m_frameRateTimer.Stop(); }
+    wxString FrameRateText() const
+    {
+        if (!pFrame || !pFrame->CaptureActive || !pFrame->pGuider || pFrame->pGuider->GetPauseType() == PAUSE_FULL ||
+            pFrame->pGuider->FrameIntervalMs() <= 0.0)
+            return wxEmptyString;
+        return wxString::Format(" %5.1f fps (%.0f ms)", pFrame->pGuider->FrameRate(), pFrame->pGuider->FrameIntervalMs());
+    }
+    wxString DisplayedText() const { return window.m_grid2->GetCellValue(window.m_frameRateRow, 1); }
+    void SetText(const wxString& text) { window.m_grid2->SetCellValue(window.m_frameRateRow, 1, text); }
+    void FlushPaint()
+    {
+        // On MSW, high-rate capture can starve deferred WM_PAINT messages.
+        // Flush only from this independent, rate-limited timer, never from
+        // UpdateGuideState or UpdateStats on the guide-frame processing path.
+        if (wxWindow *gridWin = window.m_grid2->GetGridWindow())
+            gridWin->Update();
+    }
+};
+
+StatsWindow::~StatsWindow(void)
+{
+    m_frameRateTimer.Stop();
+}
 
 void StatsWindow::SetState(bool is_active)
 {
     m_visible = is_active;
+    FrameRateBackend backend { *this };
+    m_frameRateRefresh.SetVisible(backend, m_visible);
     if (m_visible)
     {
         UpdateStats();
@@ -231,8 +271,6 @@ void StatsWindow::UpdateStats(void)
                           wxString::Format(" %u (%.f%%)", stats.dec_limit_cnt, stats.dec_limit_cnt * 100. / historyItems));
 
     m_grid2->SetCellValue(row++, col, wxString::Format(" %u", stats.star_lost_cnt));
-
-    UpdateFrameRate();
 
     m_grid1->EndBatch();
     m_grid2->EndBatch();
@@ -306,30 +344,10 @@ void StatsWindow::ResetImageSize()
     m_grid2->SetCellValue(m_pixelScaleRow + 1, 1, wxEmptyString);
 }
 
-void StatsWindow::UpdateFrameRate()
+void StatsWindow::OnTimerFrameRate(wxTimerEvent&)
 {
-    if (!m_visible || !pFrame || !pFrame->pGuider)
-        return;
-
-    if (pFrame->pGuider->FrameIntervalMs() > 0.0)
-    {
-        wxString const text = wxString::Format(" %5.1f fps (%.0f ms)", pFrame->pGuider->FrameRate(),
-                                               pFrame->pGuider->FrameIntervalMs());
-        if (m_grid2->GetCellValue(m_frameRateRow, 1) != text)
-        {
-            m_grid2->SetCellValue(m_frameRateRow, 1, text);
-            // wxGrid only queues a repaint; WM_PAINT is the lowest priority message and
-            // gets starved while frames arrive faster than the loop drains events, so the
-            // row froze at high frame rates and only caught up when the loop stopped.
-            // Flush just this update region.
-            // the update region lives on the inner grid window
-            if (wxWindow *gridWin = m_grid2->GetGridWindow())
-                gridWin->Update();
-        }
-
-    }
-    else
-        m_grid2->SetCellValue(m_frameRateRow, 1, wxEmptyString);
+    FrameRateBackend backend { *this };
+    m_frameRateRefresh.OnTimer(backend);
 }
 
 void StatsWindow::OnTimerCooler(wxTimerEvent&)

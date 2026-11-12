@@ -17,6 +17,10 @@ The fork focuses on guide-camera performance and transport, without changing the
 - **Configuration robustness** with wx 3.2 (type-agnostic profile reads).
 - **Multi-star candidate pool**: `/guider/multistar/MaxCandidates` (default 20, range 9..24); up to 9 stars are still used per frame.
 - **Chinese (zh_CN / zh_TW) localization** updates.
+- **Runtime overhead**: debug logs use a 64 KiB buffer with a one-second flush
+  threshold and rotate at approximately 10 MiB between records. The statistics
+  pane refreshes its frame-rate row at most four times per second, outside the
+  guide-frame processing callback.
 
 Detailed change log: [CHANGELOG.md](CHANGELOG.md) (Chinese). Build instructions and user documentation are those of upstream PHD2; see [README-PHD2.txt.in](README-PHD2.txt.in), the `build/` scripts and <https://openphdguiding.org>. Vendor SDK binaries under `cameras/` are included as in the upstream tree.
 

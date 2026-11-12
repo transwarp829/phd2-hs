@@ -7,7 +7,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Install image library
-        run: sudo apt-get update && sudo apt-get install -y libwxgtk3.2-dev libcfitsio-dev
+        run: sudo apt-get update && sudo apt-get install -y libwxgtk3.2-dev libcfitsio-dev libcurl4-openssl-dev libindi-dev
       - name: Configure
         run: cmake -S tests -B build-capture-tests -DCMAKE_BUILD_TYPE=Release
       - name: Build
@@ -20,4 +20,6 @@ jobs:
             -DHAVE_QHY_CAMERA -DHAVE_TOUPTEK_CAMERA -DHAVE_ZWO_CAMERA \
             -Isrc -I. -Icameras/qhyccdlibs/include \
             -Icameras/toupcam/include -Icameras/zwolibs/include \
-            src/cam_qhy.cpp src/cam_touptek.cpp src/cam_zwo.cpp src/star_profile.cpp
+            src/cam_qhy.cpp src/cam_touptek.cpp src/cam_zwo.cpp src/star_profile.cpp \
+            src/debuglog.cpp src/log_uploader.cpp src/statswindow.cpp src/guider.cpp \
+            src/myframe.cpp src/phd.cpp

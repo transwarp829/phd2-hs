@@ -1471,7 +1471,6 @@ void Guider::UpdateGuideState(usImage *pImage, bool bStopping)
         if (pFrame && pFrame->pStatsWin)
         {
             pFrame->pStatsWin->UpdateImageSize(pImage->Size);
-            pFrame->pStatsWin->UpdateFrameRate();
         }
 
         if (bStopping)
