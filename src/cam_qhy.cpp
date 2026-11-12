@@ -86,7 +86,7 @@ class Camera_QHY : public GuideCamera
     double m_usbTrafficStep;
     bool m_hasUsbTraffic;
     QhyCaptureState m_captureState;
-    int m_curBinMode;     // last binning written to the camera, -1 = unknown
+    int m_curBinMode; // last binning written to the camera, -1 = unknown
 
     char m_camId[CAMERA_ID_LENGTH] = "";
     double m_devicePixelSize;
@@ -357,13 +357,13 @@ QHYCameraDlg::QHYCameraDlg() : wxDialog(wxGetApp().GetTopWindow(), wxID_ANY, wxE
 
     cameraOptionsSizer->Add(m_gainText, 0, wxALL, 5);
 
-    m_offsetSpinner = NewSpinnerInt(this, wxDefaultSize,
-                                    pConfig->Profile.GetInt(CONFIG_PATH_QHY_OFFSET, DEFAULT_OFFSET), 0, 1000, 1, wxEmptyString);
+    m_offsetSpinner = NewSpinnerInt(this, wxDefaultSize, pConfig->Profile.GetInt(CONFIG_PATH_QHY_OFFSET, DEFAULT_OFFSET), 0,
+                                    1000, 1, wxEmptyString);
     AddTableEntryPair(this, optionsGrid, _("Offset"), m_offsetSpinner);
 
     m_usbTrafficSpinner =
-        NewSpinnerInt(this, wxDefaultSize,
-                      pConfig->Profile.GetInt(CONFIG_PATH_QHY_USBTRAFFIC, DEFAULT_USBTRAFFIC), 0, 1000, 1, wxEmptyString);
+        NewSpinnerInt(this, wxDefaultSize, pConfig->Profile.GetInt(CONFIG_PATH_QHY_USBTRAFFIC, DEFAULT_USBTRAFFIC), 0, 1000, 1,
+                      wxEmptyString);
     AddTableEntryPair(this, optionsGrid, _("USB Traffic"), m_usbTrafficSpinner);
 
     cameraOptionsSizer->Add(optionsGrid, 1, wxEXPAND, 5);
@@ -384,7 +384,9 @@ QHYCameraDlg::QHYCameraDlg() : wxDialog(wxGetApp().GetTopWindow(), wxID_ANY, wxE
     cameraOptionsSizer->Add(m_highGainCb, 0, wxALL, 5);
 
     m_liveModeCb = new wxCheckBox(this, wxID_ANY, _("Live mode (free running)"));
-    m_liveModeCb->SetToolTip(_("SetQHYCCDStreamMode(1): the camera free-runs and frames are taken with GetQHYCCDLiveFrame instead of one exposure per request. Faster, but the exposure then overlaps whatever the mount is doing. Needs a reconnect."));
+    m_liveModeCb->SetToolTip(
+        _("SetQHYCCDStreamMode(1): the camera free-runs and frames are taken with GetQHYCCDLiveFrame instead of one exposure "
+          "per request. Faster, but the exposure then overlaps whatever the mount is doing. Needs a reconnect."));
     cameraOptionsSizer->Add(m_liveModeCb, 0, wxALL, 5);
 
     cameraParamsSizer->Add(cameraOptionsSizer, 1, wxEXPAND, 5);
@@ -917,10 +919,12 @@ bool Camera_QHY::Connect(const wxString& camId)
 
     if (m_captureState.LiveMode())
     {
-        if (!m_captureState.StartLive([&]() {
-                ret = BeginQHYCCDLive(m_camhandle);
-                return ret == QHYCCD_SUCCESS;
-            }))
+        if (!m_captureState.StartLive(
+                [&]()
+                {
+                    ret = BeginQHYCCDLive(m_camhandle);
+                    return ret == QHYCCD_SUCCESS;
+                }))
         {
             // The stream mode is latched at init time, so there is no way back to
             // single frame without a fresh InitQHYCCD: fail loudly and name the key.
@@ -948,11 +952,13 @@ bool Camera_QHY::Disconnect()
 {
     if (m_captureState.Streaming())
     {
-        m_captureState.StopLive([&]() {
-            uint32_t ret = StopQHYCCDLive(m_camhandle);
-            Debug.Write(wxString::Format("QHY: StopQHYCCDLive ret %u\n", (unsigned) ret));
-            return ret == QHYCCD_SUCCESS;
-        });
+        m_captureState.StopLive(
+            [&]()
+            {
+                uint32_t ret = StopQHYCCDLive(m_camhandle);
+                Debug.Write(wxString::Format("QHY: StopQHYCCDLive ret %u\n", (unsigned) ret));
+                return ret == QHYCCD_SUCCESS;
+            });
     }
     else
     {
@@ -1062,10 +1068,12 @@ bool Camera_QHY::Capture(usImage& img, const CaptureParams& captureParams)
     // restoring the requested exposure, so no frame can use the previous setup.
     if (m_captureState.LiveMode() && (m_roi != roi || HwBinning != m_curBinMode))
     {
-        if (!m_captureState.StopLive([&]() {
-                ret = StopQHYCCDLive(m_camhandle);
-                return ret == QHYCCD_SUCCESS;
-            }))
+        if (!m_captureState.StopLive(
+                [&]()
+                {
+                    ret = StopQHYCCDLive(m_camhandle);
+                    return ret == QHYCCD_SUCCESS;
+                }))
         {
             Debug.Write(wxString::Format("QHY: stop live for geometry change failed: %u\n", (unsigned) ret));
             DisconnectWithAlert(_("QHY exposure failed"), NO_RECONNECT);
@@ -1190,25 +1198,29 @@ bool Camera_QHY::Capture(usImage& img, const CaptureParams& captureParams)
     // A changed live exposure must start a fresh integration: the old one could
     // otherwise outlive the timeout for a newly selected shorter exposure. The
     // helper makes no SDK calls when the exposure and geometry are unchanged.
-    QhyCaptureState::Error exposureError = m_captureState.PrepareExposure(duration,
-        [&]() {
+    QhyCaptureState::Error exposureError = m_captureState.PrepareExposure(
+        duration,
+        [&]()
+        {
             ret = StopQHYCCDLive(m_camhandle);
             return ret == QHYCCD_SUCCESS;
         },
-        [&](int exposureMs) {
+        [&](int exposureMs)
+        {
             ret = SetQHYCCDParam(m_camhandle, CONTROL_EXPOSURE, exposureMs * 1000.0);
             if (ret == QHYCCD_SUCCESS)
                 Debug.Write(wxString::Format("QHY: exposure set to %d ms\n", exposureMs));
             return ret == QHYCCD_SUCCESS;
         },
-        [&]() {
+        [&]()
+        {
             ret = BeginQHYCCDLive(m_camhandle);
             return ret == QHYCCD_SUCCESS;
         });
     if (exposureError != QhyCaptureState::Error::None)
     {
-        Debug.Write(wxString::Format("QHY: prepare exposure failed at stage %d, ret %u\n",
-                                     (int) exposureError, (unsigned) ret));
+        Debug.Write(
+            wxString::Format("QHY: prepare exposure failed at stage %d, ret %u\n", (int) exposureError, (unsigned) ret));
         DisconnectWithAlert(_("QHY exposure failed"), NO_RECONNECT);
         return true;
     }
@@ -1255,13 +1267,13 @@ bool Camera_QHY::Capture(usImage& img, const CaptureParams& captureParams)
             DisconnectWithAlert(_("QHY exposure failed"), NO_RECONNECT);
             return true;
         }
-    # ifdef CAN_STOP_CAPTURE
+# ifdef CAN_STOP_CAPTURE
         if (WorkerThread::InterruptRequested())
         {
             StopCapture(m_camhandle);
             return true;
         }
-    # endif
+# endif
 
         /*
          * Guidance regarding exposure handling. From QHY, October 2024

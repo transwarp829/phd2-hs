@@ -163,7 +163,7 @@ class Guider : public wxWindow
     bool m_avgDistanceNeedReset;
     GUIDER_STATE m_state;
     usImage *m_pCurrentImage;
-    double m_frameIntervalMs;   // smoothed wall-clock time between delivered frames
+    double m_frameIntervalMs; // smoothed wall-clock time between delivered frames
     wxLongLong m_lastFrameTimeUs;
     bool m_scaleImage;
     bool m_lockPosIsSticky;

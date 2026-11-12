@@ -49,8 +49,7 @@ static const size_t DebugBufferSize = 64 * 1024;
 
 static std::uint64_t LogClockMillis()
 {
-    return std::chrono::duration_cast<std::chrono::milliseconds>(
-        std::chrono::steady_clock::now().time_since_epoch()).count();
+    return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 }
 
 struct DebugLogFiles
@@ -87,8 +86,7 @@ struct DebugLogFiles
     }
 };
 
-DebugLog::DebugLog()
-    : m_enabled(false), m_lastWriteTime(wxDateTime::UNow()), m_part(0), m_ioErrorReported(false) { }
+DebugLog::DebugLog() : m_enabled(false), m_lastWriteTime(wxDateTime::UNow()), m_part(0), m_ioErrorReported(false) { }
 
 DebugLog::~DebugLog()
 {
@@ -342,8 +340,9 @@ wxString DebugLog::Write(const wxString& str)
         const debuglog::Buffer::Error error = m_buffer.Write(files, bytes.data(), bytes.length(), LogClockMillis());
         if (error != debuglog::Buffer::Error::None)
         {
-            const char *operation = error == debuglog::Buffer::Error::Rotate ? "rotate (continuing in current file)" :
-                error == debuglog::Buffer::Error::Write ? "write" : "flush";
+            const char *operation = error == debuglog::Buffer::Error::Rotate ? "rotate (continuing in current file)"
+                : error == debuglog::Buffer::Error::Write                    ? "write"
+                                                                             : "flush";
             ReportIOError(operation);
             if (error == debuglog::Buffer::Error::Write)
             {

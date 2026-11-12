@@ -1303,8 +1303,8 @@ void GraphLogClientWindow::OnPaint(wxPaintEvent& WXUNUSED(evt))
     // The static layer - black fill, axes, box, dashed rules and their labels - only
     // changes when the geometry or the scale does, so keep it in its own bitmap and
     // start every frame from a copy of it. Per step only the traces are drawn.
-    wxString const staticKey = wxString::Format("%d,%d,%d,%d,%u,%d", size.x, size.y, (int) m_height,
-                                                (int) units, m_length, (int) m_xSamplesPerDivision);
+    wxString const staticKey = wxString::Format("%d,%d,%d,%d,%u,%d", size.x, size.y, (int) m_height, (int) units, m_length,
+                                                (int) m_xSamplesPerDivision);
     if (!m_bgBitmap || m_bgKey != staticKey)
     {
         if (!m_bgBitmap || m_bgBitmap->GetSize() != size)
@@ -1335,11 +1335,11 @@ void GraphLogClientWindow::OnPaint(wxPaintEvent& WXUNUSED(evt))
         bgdc.SetPen(GreyDashPen);
         bgdc.SetTextForeground(*wxLIGHT_GREY);
         const wxFont& SmallFont =
-    #if defined(__WXOSX__)
+#if defined(__WXOSX__)
             *wxSMALL_FONT;
-    #else
+#else
             *wxSWISS_FONT;
-    #endif
+#endif
         bgdc.SetFont(SmallFont);
 
         for (int i = 1; i <= m_yDivisions; i++)
@@ -1347,13 +1347,14 @@ void GraphLogClientWindow::OnPaint(wxPaintEvent& WXUNUSED(evt))
             double div_y = center.y - i * yPixelsPerDivision;
             bgdc.DrawLine(leftEdge, div_y, rightEdge, div_y);
             bgdc.DrawText(wxString::Format("%g%s", i * (double) m_height / (m_yDivisions + 1),
-                                         units == UNIT_ARCSEC ? "''" : (i == 3 ? " px" : "")),
-                        leftEdge + 3, div_y - 13);
+                                           units == UNIT_ARCSEC ? "''" : (i == 3 ? " px" : "")),
+                          leftEdge + 3, div_y - 13);
 
             div_y = center.y + i * yPixelsPerDivision;
             bgdc.DrawLine(leftEdge, div_y, rightEdge, div_y);
-            bgdc.DrawText(wxString::Format("%g%s", -i * (double) m_height / (m_yDivisions + 1), units == UNIT_ARCSEC ? "''" : ""),
-                        leftEdge + 3, div_y - 13);
+            bgdc.DrawText(
+                wxString::Format("%g%s", -i * (double) m_height / (m_yDivisions + 1), units == UNIT_ARCSEC ? "''" : ""),
+                leftEdge + 3, div_y - 13);
         }
 
         for (int i = 1; i <= xDivisions; i++)
@@ -1361,7 +1362,6 @@ void GraphLogClientWindow::OnPaint(wxPaintEvent& WXUNUSED(evt))
             bgdc.DrawLine(center.x - i * xPixelsPerDivision, topEdge, center.x - i * xPixelsPerDivision, bottomEdge);
             bgdc.DrawLine(center.x + i * xPixelsPerDivision, topEdge, center.x + i * xPixelsPerDivision, bottomEdge);
         }
-
 
         if (m_showCorrections && !(pMount && pMount->IsStepGuider()))
         {
@@ -1381,8 +1381,6 @@ void GraphLogClientWindow::OnPaint(wxPaintEvent& WXUNUSED(evt))
             bgdc.SetTextForeground(*wxLIGHT_GREY);
             bgdc.SetFont(SmallFont);
         }
-
-
 
         bgdc.SelectObject(wxNullBitmap);
         m_bgKey = staticKey;
@@ -1625,7 +1623,6 @@ void GraphLogClientWindow::OnPaint(wxPaintEvent& WXUNUSED(evt))
 
         m_pOscIndex->SetLabel(wxString::Format("RA Osc: %4.2f", m_stats.osc_index));
     }
-
 
     wxPaintDC screen(this);
     screen.Blit(0, 0, size.x, size.y, &dc, 0, 0);

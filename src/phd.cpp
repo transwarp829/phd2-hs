@@ -420,9 +420,10 @@ static void OpenLogs(bool rollover)
     {
         wxFileName const exePath(wxStandardPaths::Get().GetExecutablePath());
         wxDateTime const built = exePath.GetModificationTime();
-        Debug.Write(wxString::Format("PHD2 build: %s\n",
-                                     built.IsValid() ? built.Format("%Y-%m-%d %H:%M:%S") : wxString("unknown")));
-    }    Debug.Write(wxString::Format("   %s\n", GetOsDescription()));
+        Debug.Write(
+            wxString::Format("PHD2 build: %s\n", built.IsValid() ? built.Format("%Y-%m-%d %H:%M:%S") : wxString("unknown")));
+    }
+    Debug.Write(wxString::Format("   %s\n", GetOsDescription()));
 #if defined(__linux__)
     Debug.Write(wxString::Format("   %s\n", wxGetLinuxDistributionInfo().Description));
 #endif

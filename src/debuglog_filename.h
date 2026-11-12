@@ -16,10 +16,7 @@ struct FileName
     unsigned int part = 0;
     bool qualified = false;
 
-    std::string SessionKey() const
-    {
-        return (qualified ? std::to_string(instance) + "_" : "") + timestamp;
-    }
+    std::string SessionKey() const { return (qualified ? std::to_string(instance) + "_" : "") + timestamp; }
 };
 
 inline bool ParseNumber(const std::string& value, unsigned int& result)

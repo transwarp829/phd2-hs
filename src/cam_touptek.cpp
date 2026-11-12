@@ -183,7 +183,6 @@ struct ToupCam
         return false;
     }
 
-
     bool PullImage(void *buf, wxSize *sz, bool *pending = nullptr)
     {
         if (pending)
@@ -314,7 +313,7 @@ struct ToupVideoCaptureWait
 class CameraToupTek : public GuideCamera
 {
     ToupCam m_cam;
-    int m_speed;   // USB transfer speed; the connect path used to pin this to 0
+    int m_speed; // USB transfer speed; the connect path used to pin this to 0
     // TOUPCAM_OPTION_TRIGGER: 1 = one software trigger per frame (upstream
     // behaviour), 0 = free-running video mode, which is the SDK default
     bool m_videoMode;
@@ -523,8 +522,7 @@ bool CameraToupTek::Connect(const wxString& camIdArg)
         m_speed = (int) info->model->maxspeed;
     if (info->model)
         pConfig->Profile.SetInt("/camera/ToupTek/MaxSpeed", (int) info->model->maxspeed);
-    Debug.Write(wxString::Format("TOUPTEK: speed option = %d (max %u)\n", m_speed,
-                                 info->model ? info->model->maxspeed : 0));
+    Debug.Write(wxString::Format("TOUPTEK: speed option = %d (max %u)\n", m_speed, info->model ? info->model->maxspeed : 0));
     if (FAILED(hr = Toupcam_put_Speed(m_cam.m_h, (unsigned short) m_speed)))
         Debug.Write(wxString::Format("TOUPTEK: Toupcam_put_Speed(%d) failed with status 0x%x\n", m_speed, hr));
 
@@ -559,14 +557,14 @@ bool CameraToupTek::Connect(const wxString& camIdArg)
     // let the profile opt in.
     m_videoMode = pConfig->Profile.GetBoolean("/camera/ToupTek/VideoMode", true);
     m_cam.SetOption(TOUPCAM_OPTION_TRIGGER, m_videoMode ? 0 : 1);
-    Debug.Write(wxString::Format("TOUPTEK: trigger option = %d (%s)\n",
-                                 m_videoMode ? 0 : 1, m_videoMode ? "video" : "software trigger"));
+    Debug.Write(wxString::Format("TOUPTEK: trigger option = %d (%s)\n", m_videoMode ? 0 : 1,
+                                 m_videoMode ? "video" : "software trigger"));
     // the range is mode dependent on some bodies, so log it next to the mode
     {
         unsigned expMin = 0, expMax = 0, expDef = 0;
         if (SUCCEEDED(Toupcam_get_ExpTimeRange(m_cam.m_h, &expMin, &expMax, &expDef)))
-            Debug.Write(wxString::Format("TOUPTEK: exposure range %u .. %u us (default %u), mode=%s\n",
-                                         expMin, expMax, expDef, m_videoMode ? "video" : "trigger"));
+            Debug.Write(wxString::Format("TOUPTEK: exposure range %u .. %u us (default %u), mode=%s\n", expMin, expMax, expDef,
+                                         m_videoMode ? "video" : "trigger"));
         else
             Debug.Write("TOUPTEK: Toupcam_get_ExpTimeRange failed\n");
     }
@@ -591,8 +589,7 @@ bool CameraToupTek::Connect(const wxString& camIdArg)
     unsigned short speed;
     if (SUCCEEDED(hr = Toupcam_get_Speed(m_cam.m_h, &speed)))
     {
-        Debug.Write(wxString::Format("TOUPTEK: speed = %hu (requested %d), max = %u\n", speed, m_speed,
-                                     info->model->maxspeed));
+        Debug.Write(wxString::Format("TOUPTEK: speed = %hu (requested %d), max = %u\n", speed, m_speed, info->model->maxspeed));
         if ((int) speed != m_speed)
         {
             if (FAILED(hr = Toupcam_put_Speed(m_cam.m_h, (unsigned short) m_speed)))
@@ -952,7 +949,10 @@ ToupTekCameraDlg::ToupTekCameraDlg() : wxDialog(wxGetApp().GetTopWindow(), wxID_
     m_realTimeChoice->Append(_("0 - Off: stop grabbing when the queue is full"));
     m_realTimeChoice->Append(_("1 - Both: drop all pending frames"));
     m_realTimeChoice->Append(_("2 - Soft: drop pending, keep DDR"));
-    m_realTimeChoice->SetToolTip(_("Toupcam_put_RealTime: the stale-frame policy, not a rate limit. 0 keeps everything and stalls when the queue is full; 1 drops pending frames, which on this body also costs every other frame (65 ms instead of 34); 2 drops pending frames without touching the DDR buffer and keeps the full rate."));
+    m_realTimeChoice->SetToolTip(
+        _("Toupcam_put_RealTime: the stale-frame policy, not a rate limit. 0 keeps everything and stalls when the queue is "
+          "full; 1 drops pending frames, which on this body also costs every other frame (65 ms instead of 34); 2 drops "
+          "pending frames without touching the DDR buffer and keeps the full rate."));
     rtRow->Add(m_realTimeChoice, 0, wxALL, 5);
     sbSizerFast->Add(rtRow, 0, wxEXPAND, 0);
 

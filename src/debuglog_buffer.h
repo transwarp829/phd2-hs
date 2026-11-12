@@ -20,10 +20,18 @@ class Buffer
     const std::uint64_t m_intervalMs;
 
 public:
-    enum class Error { None, Rotate, Write, Flush };
-    explicit Buffer(std::uint64_t maxSize = 10 * 1024 * 1024,
-                    std::uint64_t batchSize = 64 * 1024, std::uint64_t intervalMs = 1000)
-        : m_maxSize(maxSize), m_batchSize(batchSize), m_intervalMs(intervalMs) { }
+    enum class Error
+    {
+        None,
+        Rotate,
+        Write,
+        Flush
+    };
+    explicit Buffer(std::uint64_t maxSize = 10 * 1024 * 1024, std::uint64_t batchSize = 64 * 1024,
+                    std::uint64_t intervalMs = 1000)
+        : m_maxSize(maxSize), m_batchSize(batchSize), m_intervalMs(intervalMs)
+    {
+    }
 
     void Reset(std::uint64_t existingBytes, std::uint64_t now)
     {
@@ -35,7 +43,8 @@ public:
     std::uint64_t Size() const { return m_size; }
     std::uint64_t Pending() const { return m_pending; }
 
-    template<typename Api> bool Flush(Api& api, std::uint64_t now)
+    template<typename Api>
+    bool Flush(Api& api, std::uint64_t now)
     {
         if (!api.Flush())
             return false;
@@ -44,12 +53,14 @@ public:
         return true;
     }
 
-    template<typename Api> bool FlushIfDue(Api& api, std::uint64_t now)
+    template<typename Api>
+    bool FlushIfDue(Api& api, std::uint64_t now)
     {
         return m_pending == 0 || now - m_lastFlush < m_intervalMs || Flush(api, now);
     }
 
-    template<typename Api> Error Write(Api& api, const char *data, size_t length, std::uint64_t now)
+    template<typename Api>
+    Error Write(Api& api, const char *data, size_t length, std::uint64_t now)
     {
         Error error = Error::None;
         if (m_size != 0 && (m_size >= m_maxSize || length > m_maxSize - m_size) && now >= m_nextRotateAttempt)
