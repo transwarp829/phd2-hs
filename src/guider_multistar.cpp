@@ -188,7 +188,8 @@ enum
     MAX_SEARCH_REGION = 50,
     DEFAULT_MAX_STAR_COUNT = 9,
     DEFAULT_STABILITY_SIGMAX = 5,
-    MAX_LIST_SIZE = 12
+    DEFAULT_MAX_CANDIDATES = 20, // number of stars AutoFind adds to the candidate list (the "reserve" pool)
+    MAX_LIST_SIZE = 24           // hard ceiling for the candidate list
 };
 
 // clang-format off
@@ -202,7 +203,7 @@ wxEND_EVENT_TABLE();
 GuiderMultiStar::GuiderMultiStar(wxWindow *parent)
     : Guider(parent, XWinSize, YWinSize), m_massChecker(new MassChecker()), m_stabilizing(false), m_multiStarMode(true),
       m_lastPrimaryDistance(0), m_lockPositionMoved(false), m_maxStars(DEFAULT_MAX_STAR_COUNT),
-      m_stabilitySigmaX(DEFAULT_STABILITY_SIGMAX), m_lastStarsUsed(0)
+      m_maxCandidates(DEFAULT_MAX_CANDIDATES), m_stabilitySigmaX(DEFAULT_STABILITY_SIGMAX), m_lastStarsUsed(0)
 {
     SetState(STATE_UNINITIALIZED);
     m_primaryDistStats = new DescriptiveStats();
@@ -273,6 +274,8 @@ void GuiderMultiStar::LoadProfileSettings()
 
     int searchRegion = pConfig->Profile.GetInt("/guider/onestar/SearchRegion", DEFAULT_SEARCH_REGION);
     SetSearchRegion(searchRegion);
+
+    SetMaxCandidates(pConfig->Profile.GetInt("/guider/multistar/MaxCandidates", DEFAULT_MAX_CANDIDATES));
 
     SetMultiStarMode(pConfig->Profile.GetBoolean("/guider/multistar/enabled", false));
 }
@@ -355,6 +358,40 @@ bool GuiderMultiStar::SetSearchRegion(int searchRegion)
     }
 
     pConfig->Profile.SetInt("/guider/onestar/SearchRegion", m_searchRegion);
+
+    return bError;
+}
+
+unsigned int GuiderMultiStar::GetMaxCandidates() const
+{
+    return m_maxCandidates;
+}
+
+bool GuiderMultiStar::SetMaxCandidates(int maxCandidates)
+{
+    bool bError = false;
+
+    try
+    {
+        if (maxCandidates < static_cast<int>(DEFAULT_MAX_STAR_COUNT))
+        {
+            m_maxCandidates = DEFAULT_MAX_STAR_COUNT;
+            throw ERROR_INFO("maxCandidates < DEFAULT_MAX_STAR_COUNT");
+        }
+        else if (maxCandidates > static_cast<int>(MAX_LIST_SIZE))
+        {
+            m_maxCandidates = MAX_LIST_SIZE;
+            throw ERROR_INFO("maxCandidates > MAX_LIST_SIZE");
+        }
+        m_maxCandidates = static_cast<unsigned int>(maxCandidates);
+    }
+    catch (const wxString& Msg)
+    {
+        POSSIBLY_UNUSED(Msg);
+        bError = true;
+    }
+
+    pConfig->Profile.SetInt("/guider/multistar/MaxCandidates", static_cast<int>(m_maxCandidates));
 
     return bError;
 }
@@ -469,7 +506,7 @@ bool GuiderMultiStar::AutoSelect(const wxRect& roi)
 
         GuideStar newStar;
         if (!newStar.AutoFind(*image, edgeAllowance, m_searchRegion, roi, m_guideStars,
-                              (pCamera->UseSubframes || !m_multiStarMode) ? 1 : MAX_LIST_SIZE))
+                              (pCamera->UseSubframes || !m_multiStarMode) ? 1 : static_cast<int>(m_maxCandidates)))
         {
             throw ERROR_INFO("Unable to AutoFind");
         }

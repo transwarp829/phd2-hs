@@ -91,6 +91,7 @@ class GuiderMultiStar : public Guider
     bool m_tolerateJumpsEnabled;
     double m_tolerateJumpsThreshold;
     unsigned int m_maxStars;
+    unsigned int m_maxCandidates;
     double m_stabilitySigmaX;
 
 public:
@@ -112,6 +113,8 @@ public:
     bool SetMassChangeThreshold(double starMassChangeThreshold);
     bool SetTolerateJumps(bool enable, double threshold);
     bool SetSearchRegion(int searchRegion);
+    unsigned int GetMaxCandidates() const;
+    bool SetMaxCandidates(int maxCandidates);
     bool RefineOffset(const usImage *pImage, GuiderOffset *pOffset);
 
     friend class GuiderMultiStarConfigDialogPane;
