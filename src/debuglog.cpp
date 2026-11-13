@@ -36,7 +36,9 @@
 #include "phd.h"
 
 #include <wx/dir.h>
+#include <wx/log.h>
 #include "debuglog_filename.h"
+#include "debuglog_record.h"
 #include <chrono>
 #include <cstdio>
 #include <limits>
@@ -55,8 +57,19 @@ static std::uint64_t LogClockMillis()
 struct DebugLogFiles
 {
     DebugLog& log;
-    size_t Write(const char *data, size_t size) { return log.wxFFile::Write(data, size); }
-    bool Flush() { return log.wxFFile::Flush(); }
+    // Raw stdio, not wxFFile::Write/Flush: those report failures through
+    // wxLogSysError, which could raise a GUI error dialog per flush attempt on a
+    // broken volume. DebugLog reports failures itself instead (ReportIOError).
+    size_t Write(const char *data, size_t size)
+    {
+        FILE *file = log.fp();
+        return file == nullptr ? 0 : std::fwrite(data, 1, size, file);
+    }
+    bool Flush()
+    {
+        FILE *file = log.fp();
+        return file == nullptr || std::fflush(file) == 0;
+    }
     bool Rotate(std::uint64_t& size)
     {
         if (log.m_part == std::numeric_limits<unsigned int>::max())
@@ -64,6 +77,9 @@ struct DebugLogFiles
         const unsigned int part = log.m_part + 1;
         const wxString path = wxString::FromUTF8(debuglog::MakePartName(log.m_path.ToUTF8().data(), part).c_str());
         wxFFile next;
+        // wxFFile::Open/Length log through wxLog on failure; keep that out of the
+        // logging path (a failing logger must not open message boxes).
+        wxLogNull noLog;
         if (!next.Open(path, "ab"))
             return false;
         // Configure stdio before its first operation; otherwise its small default
@@ -77,7 +93,8 @@ struct DebugLogFiles
         // The old tail is already flushed. Open the replacement before detaching
         // the old handle so an open failure leaves logging fully operational.
         FILE *old = log.Detach();
-        log.Attach(next.Detach());
+        // Keep the name so wxFFile's diagnostics can still name the file.
+        log.Attach(next.Detach(), path);
         if (old && std::fclose(old) != 0)
             log.ReportIOError("close rotated file");
         log.m_part = part;
@@ -146,6 +163,9 @@ bool DebugLog::Enable(bool enable)
 void DebugLog::InitDebugLog(bool enable, bool forceOpen)
 {
     wxCriticalSectionLocker lock(m_criticalSection);
+    // wxFFile reports open/length/close failures through wxLog; a broken log
+    // volume must not open GUI error dialogs. ReportIOError covers the failure.
+    wxLogNull noLog;
     if (!enable)
     {
         if (forceOpen)
@@ -275,6 +295,8 @@ bool DebugLog::CloseLocked()
     if (!IsOpened())
         return true;
     const bool flushed = FlushLocked();
+    // wxFFile::Close logs through wxLog on failure; ReportIOError below owns it.
+    wxLogNull noLog;
     const bool closed = wxFFile::Close();
     if (!closed)
         ReportIOError("close");
@@ -335,9 +357,12 @@ wxString DebugLog::Write(const wxString& str)
         wxString outputLine = wxString::Format("%s %s %lu %s", now.Format("%H:%M:%S.%l"), deltaTime.Format("%S.%l"),
                                                (unsigned long) wxThread::GetCurrentId(), str);
 
-        const wxScopedCharBuffer bytes = outputLine.ToUTF8();
+        const wxScopedCharBuffer utf8 = outputLine.ToUTF8();
+        // Binary stdio does not translate newlines: restore the CRLF line endings
+        // that wxFFile's text mode produced before this writer existed.
+        const std::string record = debuglog::ExpandLineEndings(utf8.data(), utf8.length());
         DebugLogFiles files { *this };
-        const debuglog::Buffer::Error error = m_buffer.Write(files, bytes.data(), bytes.length(), LogClockMillis());
+        const debuglog::Buffer::Error error = m_buffer.Write(files, record.data(), record.size(), LogClockMillis());
         if (error != debuglog::Buffer::Error::None)
         {
             const char *operation = error == debuglog::Buffer::Error::Rotate ? "rotate (continuing in current file)"
@@ -347,7 +372,7 @@ wxString DebugLog::Write(const wxString& str)
             if (error == debuglog::Buffer::Error::Write)
             {
                 // Preserve a diagnostic copy when the log file cannot accept it.
-                std::fwrite(bytes.data(), 1, bytes.length(), stderr);
+                std::fwrite(utf8.data(), 1, utf8.length(), stderr);
                 std::fflush(stderr);
             }
         }

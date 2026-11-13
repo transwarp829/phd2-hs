@@ -15,6 +15,10 @@ class Buffer
     std::uint64_t m_pending = 0;
     std::uint64_t m_lastFlush = 0;
     std::uint64_t m_nextRotateAttempt = 0;
+    // A failed flush must not be retried every tick: a slow or broken volume
+    // would block the UI thread (which runs the periodic flush) twice a second.
+    std::uint64_t m_nextFlushAttempt = 0;
+    std::uint64_t m_flushBackoffMs = 0;
     const std::uint64_t m_maxSize;
     const std::uint64_t m_batchSize;
     const std::uint64_t m_intervalMs;
@@ -26,6 +30,10 @@ public:
         Rotate,
         Write,
         Flush
+    };
+    enum
+    {
+        MaxFlushBackoffMs = 30000
     };
     explicit Buffer(std::uint64_t maxSize = 10 * 1024 * 1024, std::uint64_t batchSize = 64 * 1024,
                     std::uint64_t intervalMs = 1000)
@@ -39,24 +47,38 @@ public:
         m_pending = 0;
         m_lastFlush = now;
         m_nextRotateAttempt = 0;
+        m_nextFlushAttempt = 0;
+        m_flushBackoffMs = 0;
     }
     std::uint64_t Size() const { return m_size; }
     std::uint64_t Pending() const { return m_pending; }
 
+    // Forced flush: lifecycle events (disable/close/upload) must retry at once
+    // even while the timetable is backing off from a previous failure.
     template<typename Api>
     bool Flush(Api& api, std::uint64_t now)
     {
         if (!api.Flush())
+        {
+            m_flushBackoffMs = m_flushBackoffMs == 0 ? m_intervalMs : m_flushBackoffMs * 2;
+            if (m_flushBackoffMs > MaxFlushBackoffMs)
+                m_flushBackoffMs = MaxFlushBackoffMs;
+            m_nextFlushAttempt = now + m_flushBackoffMs;
             return false;
+        }
         m_pending = 0;
         m_lastFlush = now;
+        m_flushBackoffMs = 0;
+        m_nextFlushAttempt = 0;
         return true;
     }
 
     template<typename Api>
     bool FlushIfDue(Api& api, std::uint64_t now)
     {
-        return m_pending == 0 || now - m_lastFlush < m_intervalMs || Flush(api, now);
+        if (m_pending == 0 || now - m_lastFlush < m_intervalMs || now < m_nextFlushAttempt)
+            return true;
+        return Flush(api, now);
     }
 
     template<typename Api>
@@ -86,7 +108,8 @@ public:
         m_pending += written;
         if (written != length)
             return Error::Write;
-        if ((m_pending >= m_batchSize || now - m_lastFlush >= m_intervalMs) && !Flush(api, now))
+        if ((m_pending >= m_batchSize || now - m_lastFlush >= m_intervalMs) && now >= m_nextFlushAttempt &&
+            !Flush(api, now))
             return Error::Flush;
         return error;
     }

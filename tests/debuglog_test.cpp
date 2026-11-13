@@ -1,5 +1,6 @@
 #include "debuglog_buffer.h"
 #include "debuglog_filename.h"
+#include "debuglog_record.h"
 
 #include <cstdio>
 #include <iostream>
@@ -140,9 +141,11 @@ static void FailuresKeepDiagnosticsAndRetry()
     flushFailure.failFlush = true;
     Require(Write(buffer, flushFailure, "a", 2) == debuglog::Buffer::Error::Flush, "flush failure must be reported");
     Require(flushFailure.rotations == 0 && buffer.Pending() == 11, "failed flush must preserve pending tail and original handle");
-    Require(!buffer.FlushIfDue(flushFailure, 1000), "timer must surface failed flush");
+    Require(buffer.FlushIfDue(flushFailure, 1000), "timer must wait out the flush backoff");
+    Require(flushFailure.flushes == 1, "no flush attempt inside the backoff window");
+    Require(!buffer.FlushIfDue(flushFailure, 1003), "timer must surface failed flush after the backoff");
     flushFailure.failFlush = false;
-    Require(buffer.Flush(flushFailure, 1001) && buffer.Pending() == 0, "later explicit flush can recover");
+    Require(buffer.Flush(flushFailure, 1004) && buffer.Pending() == 0, "later explicit flush can recover");
     Require(flushFailure.persisted[0] == "1234567890a", "failed flush must not lose records");
 
     MemoryFiles shortFile;
@@ -150,6 +153,35 @@ static void FailuresKeepDiagnosticsAndRetry()
     shortFile.shortWrite = true;
     Require(Write(buffer, shortFile, "four", 1) == debuglog::Buffer::Error::Write, "partial write must report failure");
     Require(buffer.Size() == 3 && buffer.Pending() == 3, "partial write counts must reflect actual bytes");
+}
+
+static void LineEndingsMatchUpstreamTextMode()
+{
+    const std::string lf = "one\ntwo\n";
+    Require(debuglog::ExpandLineEndings(lf.data(), lf.size()) == "one\r\ntwo\r\n", "LF must become CRLF");
+    const std::string mixed = "a\r\nb\n";
+    Require(debuglog::ExpandLineEndings(mixed.data(), mixed.size()) == "a\r\r\nb\r\n",
+            "every LF is translated exactly like the old text-mode stream");
+    Require(debuglog::ExpandLineEndings("", 0).empty(), "empty record");
+}
+
+static void FlushFailureBacksOff()
+{
+    debuglog::Buffer buffer(1000, 8, 1000);
+    MemoryFiles files;
+    buffer.Reset(0, 0);
+    Require(Write(buffer, files, "abc", 1) == debuglog::Buffer::Error::None, "write");
+    files.failFlush = true;
+    Require(!buffer.FlushIfDue(files, 1000), "first due flush fails");
+    const unsigned failed = files.flushes;
+    Require(Write(buffer, files, "123456789", 1100) == debuglog::Buffer::Error::None, "batched write while backing off");
+    Require(files.flushes == failed, "write path must not retry inside the backoff window");
+    Require(!buffer.FlushIfDue(files, 2100), "second attempt after the first backoff fails");
+    const unsigned failed2 = files.flushes;
+    Require(files.flushes == failed + 1, "backoff allowed exactly one retry");
+    Require(buffer.FlushIfDue(files, 2500) && files.flushes == failed2, "doubled backoff defers the next attempt");
+    files.failFlush = false;
+    Require(buffer.Flush(files, 10000), "explicit flush retries immediately");
 }
 
 static void NamesAndRestartSelection()
@@ -224,6 +256,8 @@ int main()
         RotationBoundariesAndExistingFiles();
         Utf8BytesAndOversizeRecords();
         FailuresKeepDiagnosticsAndRetry();
+        LineEndingsMatchUpstreamTextMode();
+        FlushFailureBacksOff();
         NamesAndRestartSelection();
         RealFileWrites();
         std::cout << "Debug log regression tests passed\n";
