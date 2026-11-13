@@ -53,6 +53,11 @@ if(PHD2_TEST_WXIMAGE)
 
     add_executable(help_load_test help_load_test.cpp)
     target_compile_features(help_load_test PRIVATE cxx_std_14)
+    # The test carries UTF-8 Chinese menu names. Without /utf-8, MSVC decodes the
+    # source in the system code page and the build fails (C4819/C2001/C3688).
+    if(MSVC)
+        target_compile_options(help_load_test PRIVATE /utf-8)
+    endif()
     if(TARGET wx::html)
         target_link_libraries(help_load_test PRIVATE wx::html wx::core wx::base)
     else()
