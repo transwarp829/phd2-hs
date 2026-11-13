@@ -3,7 +3,6 @@
 #include <cstdlib>
 #include <initializer_list>
 #include <iostream>
-#include <string>
 #include <vector>
 
 namespace
@@ -35,28 +34,11 @@ struct FakeCamera
         return operation == fail ? 17 : 0;
     }
 
-    int GetExposure(long& value)
-    {
-        int error = Call(Operation::GetExposure);
-        if (!error)
-            value = exposure;
-        return error;
-    }
-
-    int GetGain(long& value)
-    {
-        int error = Call(Operation::GetGain);
-        if (!error)
-            value = gain;
-        return error;
-    }
-
     int SetExposure(long value)
     {
         int error = Call(Operation::SetExposure);
         if (!error)
             exposure = value;
-        // Changing a setting does not change the exposure already in flight.
         return error;
     }
 
@@ -101,10 +83,13 @@ void UnchangedSettingsKeepTheStream()
 {
     FakeCamera camera;
     bool capturing = true;
-    auto result = zwo_capture::Configure(camera, true, capturing, camera.exposure, true, camera.gain);
+    long lastExposure = camera.exposure;
+    long lastGain = camera.gain;
+    auto result = zwo_capture::Configure(camera, true, capturing, lastExposure, lastGain, true, camera.exposure, camera.gain);
     Require(result.Ok() && capturing && camera.streaming, "unchanged settings keep video active");
+    RequireCalls(camera, {}, "steady frames must not touch the SDK at all");
     Require(zwo_capture::StartVideo(camera, capturing).Ok(), "starting an active stream is a no-op");
-    RequireCalls(camera, { Operation::GetExposure, Operation::GetGain }, "steady frames must not stop or rewrite settings");
+    RequireCalls(camera, {}, "starting an active stream must not call the SDK");
 }
 
 void ChangedSettingsDiscardTheInFlightFrame()
@@ -113,15 +98,18 @@ void ChangedSettingsDiscardTheInFlightFrame()
     {
         FakeCamera camera;
         bool capturing = true;
-        long exposure = (change & 1) ? 3000000 : camera.exposure;
-        long gain = (change & 2) ? 40 : camera.gain;
-        auto result = zwo_capture::Configure(camera, true, capturing, exposure, true, gain);
+        long lastExposure = camera.exposure;
+        long lastGain = camera.gain;
+        long const exposure = (change & 1) ? 3000000 : camera.exposure;
+        long const gain = (change & 2) ? 40 : camera.gain;
+        auto result = zwo_capture::Configure(camera, true, capturing, lastExposure, lastGain, true, exposure, gain);
         Require(result.Ok() && !capturing && !camera.streaming, "changed settings stop the old stream");
         Require(camera.inFlightExposure == -1, "the old-parameter exposure must be cancelled");
+        Require(lastExposure == exposure && lastGain == gain, "successful writes update the cached settings");
         Require(zwo_capture::StartVideo(camera, capturing).Ok(), "changed settings can start a fresh stream");
         Require(capturing && camera.inFlightExposure == exposure && camera.inFlightGain == gain,
                 "the next frame must use the requested exposure and gain");
-        std::vector<Operation> expected = { Operation::GetExposure, Operation::GetGain, Operation::StopVideo };
+        std::vector<Operation> expected = { Operation::StopVideo };
         if (change & 1)
             expected.push_back(Operation::SetExposure);
         if (change & 2)
@@ -138,10 +126,11 @@ void InactiveAndSnapshotCamerasDoNotStop()
         FakeCamera camera;
         camera.streaming = false;
         bool capturing = false;
-        auto result = zwo_capture::Configure(camera, videoMode, capturing, 2000000, true, 40);
+        long lastExposure = -1;
+        long lastGain = -1;
+        auto result = zwo_capture::Configure(camera, videoMode, capturing, lastExposure, lastGain, true, 2000000, 40);
         Require(result.Ok() && !capturing, "configuration must not start a camera");
-        RequireCalls(camera, { Operation::GetExposure, Operation::GetGain, Operation::SetExposure, Operation::SetGain },
-                     "an inactive camera needs no stop call");
+        RequireCalls(camera, { Operation::SetExposure, Operation::SetGain }, "an inactive camera needs no stop call");
     }
 }
 
@@ -150,43 +139,43 @@ void LongToShortExposureDoesNotReturnTheOldFrame()
     FakeCamera camera;
     camera.exposure = camera.inFlightExposure = 10000000;
     bool capturing = true;
-    Require(zwo_capture::Configure(camera, true, capturing, 10000, true, camera.gain).Ok(),
+    long lastExposure = 10000000;
+    long lastGain = camera.gain;
+    Require(zwo_capture::Configure(camera, true, capturing, lastExposure, lastGain, true, 10000, camera.gain).Ok(),
             "ten-second to ten-millisecond exposure change");
     Require(!capturing && camera.inFlightExposure == -1, "the old ten-second integration must be cancelled");
     Require(zwo_capture::StartVideo(camera, capturing).Ok(), "start the ten-millisecond integration");
     Require(camera.inFlightExposure == 10000, "the new short-exposure request must not return an old long frame");
-    RequireCalls(
-        camera,
-        { Operation::GetExposure, Operation::GetGain, Operation::StopVideo, Operation::SetExposure, Operation::StartVideo },
-        "long-to-short transition must stop, configure, then restart");
+    RequireCalls(camera, { Operation::StopVideo, Operation::SetExposure, Operation::StartVideo },
+                 "long-to-short transition must stop, configure, then restart");
 }
 
-void CamerasWithoutGainDoNotReadIt()
+void CamerasWithoutGainDoNotWriteIt()
 {
     FakeCamera camera;
-    camera.fail = Operation::GetGain;
     bool capturing = true;
-    auto result = zwo_capture::Configure(camera, true, capturing, camera.exposure, false, 99);
-    Require(result.Ok() && capturing, "gain is optional");
-    RequireCalls(camera, { Operation::GetExposure }, "unsupported gain must not be accessed");
+    long lastExposure = 999; // force an exposure write
+    long lastGain = 20;
+    auto result = zwo_capture::Configure(camera, true, capturing, lastExposure, lastGain, false, camera.exposure, 99);
+    Require(result.Ok() && !capturing, "gain is optional");
+    Require(lastGain == 20, "unsupported gain must not update the gain cache");
+    RequireCalls(camera, { Operation::StopVideo, Operation::SetExposure }, "unsupported gain must not be written");
 }
 
-void ReadFailuresDoNotChangeTheCamera()
+void ReadBackMismatchCannotForceARestart()
 {
-    for (Operation failure : { Operation::GetExposure, Operation::GetGain })
-    {
-        FakeCamera camera;
-        camera.fail = failure;
-        bool capturing = true;
-        auto result = zwo_capture::Configure(camera, true, capturing, 3000000, true, 40);
-        Require(!result.Ok() && result.operation == failure && result.error == 17, "read failure must propagate");
-        Require(capturing && camera.streaming && camera.exposure == 1000000 && camera.gain == 20,
-                "read failure must not mutate settings or local stream state");
-        if (failure == Operation::GetExposure)
-            RequireCalls(camera, { Operation::GetExposure }, "exposure read failure must stop configuration");
-        else
-            RequireCalls(camera, { Operation::GetExposure, Operation::GetGain }, "gain read failure must stop configuration");
-    }
+    // The body may report a clamped/rounded value for what we wrote; the cache
+    // compares against the requested values, so a steady loop stays on the
+    // no-restart fast path.
+    FakeCamera camera;
+    camera.exposure = 999999; // simulated clamp of the written 1000000 us
+    camera.gain = 20;
+    bool capturing = true;
+    long lastExposure = 1000000;
+    long lastGain = 20;
+    auto result = zwo_capture::Configure(camera, true, capturing, lastExposure, lastGain, true, 1000000, 20);
+    Require(result.Ok() && capturing && camera.streaming, "a read-back mismatch must not restart the stream");
+    RequireCalls(camera, {}, "steady settings must not reissue SDK calls even if read-back would differ");
 }
 
 void StopFailurePreventsParameterChanges()
@@ -194,11 +183,13 @@ void StopFailurePreventsParameterChanges()
     FakeCamera camera;
     camera.fail = Operation::StopVideo;
     bool capturing = true;
-    auto result = zwo_capture::Configure(camera, true, capturing, 3000000, true, 40);
+    long lastExposure = camera.exposure;
+    long lastGain = camera.gain;
+    auto result = zwo_capture::Configure(camera, true, capturing, lastExposure, lastGain, true, 3000000, 40);
     Require(!result.Ok() && result.operation == Operation::StopVideo, "stop failure must propagate");
     Require(capturing && camera.streaming, "a failed stop must not claim capture has stopped");
-    RequireCalls(camera, { Operation::GetExposure, Operation::GetGain, Operation::StopVideo },
-                 "failed stop must prevent writes");
+    Require(lastExposure == camera.exposure && lastGain == camera.gain, "failed stop must not update the caches");
+    RequireCalls(camera, { Operation::StopVideo }, "failed stop must prevent writes");
 }
 
 void WriteFailuresLeaveTheStreamStopped()
@@ -208,17 +199,24 @@ void WriteFailuresLeaveTheStreamStopped()
         FakeCamera camera;
         camera.fail = failure;
         bool capturing = true;
-        auto result = zwo_capture::Configure(camera, true, capturing, 3000000, true, 40);
+        long lastExposure = camera.exposure;
+        long lastGain = camera.gain;
+        auto result = zwo_capture::Configure(camera, true, capturing, lastExposure, lastGain, true, 3000000, 40);
         Require(!result.Ok() && result.operation == failure && result.error == 17, "write failure must propagate");
         Require(!capturing && !camera.streaming, "a failed update must not resume a partly configured stream");
         if (failure == Operation::SetExposure)
-            RequireCalls(camera, { Operation::GetExposure, Operation::GetGain, Operation::StopVideo, Operation::SetExposure },
+        {
+            Require(lastExposure == 1000000 && lastGain == 20, "failed exposure write must not update either cache");
+            RequireCalls(camera, { Operation::StopVideo, Operation::SetExposure },
                          "failed exposure write must prevent the gain write and restart");
+        }
         else
-            RequireCalls(camera,
-                         { Operation::GetExposure, Operation::GetGain, Operation::StopVideo, Operation::SetExposure,
-                           Operation::SetGain },
+        {
+            Require(lastExposure == 3000000, "successful exposure write updates its cache before the failed gain");
+            Require(lastGain == 20, "failed gain write must not update the gain cache");
+            RequireCalls(camera, { Operation::StopVideo, Operation::SetExposure, Operation::SetGain },
                          "failed gain write must prevent restart");
+        }
     }
 }
 
@@ -226,7 +224,10 @@ void StartFailureDoesNotMarkCaptureActive()
 {
     FakeCamera camera;
     bool capturing = true;
-    Require(zwo_capture::Configure(camera, true, capturing, 3000000, true, 40).Ok(), "setup for failed start");
+    long lastExposure = camera.exposure;
+    long lastGain = camera.gain;
+    Require(zwo_capture::Configure(camera, true, capturing, lastExposure, lastGain, true, 3000000, 40).Ok(),
+            "setup for failed start");
     camera.fail = Operation::StartVideo;
     auto result = zwo_capture::StartVideo(camera, capturing);
     Require(!result.Ok() && result.operation == Operation::StartVideo && result.error == 17, "start failure must propagate");
@@ -252,8 +253,8 @@ int main()
     ChangedSettingsDiscardTheInFlightFrame();
     LongToShortExposureDoesNotReturnTheOldFrame();
     InactiveAndSnapshotCamerasDoNotStop();
-    CamerasWithoutGainDoNotReadIt();
-    ReadFailuresDoNotChangeTheCamera();
+    CamerasWithoutGainDoNotWriteIt();
+    ReadBackMismatchCannotForceARestart();
     StopFailurePreventsParameterChanges();
     WriteFailuresLeaveTheStreamStopped();
     StartFailureDoesNotMarkCaptureActive();

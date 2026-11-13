@@ -67,6 +67,8 @@ class Camera_ZWO : public GuideCamera
     wxByte m_bpp; // bits per pixel: 8 or 16
     CaptureMode m_mode;
     bool m_capturing;
+    long m_lastExposureUs; // last value written successfully, -1 while unknown
+    long m_lastGain; // last value written successfully, -1 while unknown
     int m_cameraId;
     int m_minGain;
     int m_maxGain;
@@ -108,16 +110,6 @@ struct ZwoCaptureApi
 {
     int cameraId;
 
-    int GetExposure(long& value)
-    {
-        ASI_BOOL automatic;
-        return ASIGetControlValue(cameraId, ASI_EXPOSURE, &value, &automatic);
-    }
-    int GetGain(long& value)
-    {
-        ASI_BOOL automatic;
-        return ASIGetControlValue(cameraId, ASI_GAIN, &value, &automatic);
-    }
     int SetExposure(long value)
     {
         Debug.Write(wxString::Format("ZWO: set CONTROL_EXPOSURE %ld\n", value));
@@ -145,7 +137,7 @@ static void LogCaptureError(const zwo_capture::Result& result)
     Debug.Write(wxString::Format("ZWO: %s failed: %d\n", zwo_capture::OperationName(result.operation), result.error));
 }
 
-Camera_ZWO::Camera_ZWO() : m_buffer(nullptr), m_capturing(false)
+Camera_ZWO::Camera_ZWO() : m_buffer(nullptr), m_capturing(false), m_lastExposureUs(-1), m_lastGain(-1)
 {
     Name = _T("ZWO ASI Camera");
     PropertyDialogType = PROPDLG_WHEN_DISCONNECTED;
@@ -524,6 +516,10 @@ bool Camera_ZWO::Connect(const wxString& camId)
     }
 
     m_cameraId = selected;
+    // A new/open camera may start with driver defaults; force the first frame to
+    // write the profile's exposure and gain.
+    m_lastExposureUs = -1;
+    m_lastGain = -1;
     Connected = true;
     Name = info.Name;
     HasBayer = info.IsColorCam != ASI_FALSE;
@@ -914,8 +910,8 @@ bool Camera_ZWO::Capture(usImage& img, const CaptureParams& captureParams)
     ZwoCaptureApi api = { m_cameraId };
     long exposureUS = duration * 1000L;
     long new_gain = HasGainControl ? cam_gain(m_minGain, m_maxGain, GuideCameraGain) : 0;
-    zwo_capture::Result configured =
-        zwo_capture::Configure(api, m_mode == CM_VIDEO, m_capturing, exposureUS, HasGainControl, new_gain);
+    zwo_capture::Result configured = zwo_capture::Configure(api, m_mode == CM_VIDEO, m_capturing, m_lastExposureUs, m_lastGain,
+                                                            HasGainControl, exposureUS, new_gain);
     if (!configured.Ok())
     {
         LogCaptureError(configured);

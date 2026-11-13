@@ -8,8 +8,6 @@ namespace zwo_capture
 enum class Operation
 {
     None,
-    GetExposure,
-    GetGain,
     StopVideo,
     SetExposure,
     SetGain,
@@ -28,10 +26,6 @@ inline const char *OperationName(Operation operation)
 {
     switch (operation)
     {
-    case Operation::GetExposure:
-        return "get exposure";
-    case Operation::GetGain:
-        return "get gain";
     case Operation::StopVideo:
         return "stop video";
     case Operation::SetExposure:
@@ -71,24 +65,17 @@ Result StartVideo(Api& api, bool& capturing)
     return { Operation::None, 0 };
 }
 
+// Compare and write against the values this driver last wrote successfully
+// instead of reading them back from the SDK every frame. ASIGetControlValue can
+// report a clamped/rounded value for a camera body, which would otherwise make
+// every frame stop and restart the stream; a failed read must not disconnect the
+// camera either. The caches are -1 while unknown (connect, first frame).
 template<typename Api>
-Result Configure(Api& api, bool videoMode, bool& capturing, long exposureUs, bool hasGain, long gain)
+Result Configure(Api& api, bool videoMode, bool& capturing, long& lastExposureUs, long& lastGain, bool hasGain, long exposureUs,
+                 long gain)
 {
-    long currentExposure = 0;
-    int error = api.GetExposure(currentExposure);
-    if (error)
-        return { Operation::GetExposure, error };
-
-    long currentGain = 0;
-    if (hasGain)
-    {
-        error = api.GetGain(currentGain);
-        if (error)
-            return { Operation::GetGain, error };
-    }
-
-    bool exposureChanged = currentExposure != exposureUs;
-    bool gainChanged = hasGain && currentGain != gain;
+    bool const exposureChanged = lastExposureUs != exposureUs;
+    bool const gainChanged = hasGain && lastGain != gain;
     if (!exposureChanged && !gainChanged)
         return { Operation::None, 0 };
 
@@ -104,15 +91,17 @@ Result Configure(Api& api, bool videoMode, bool& capturing, long exposureUs, boo
 
     if (exposureChanged)
     {
-        error = api.SetExposure(exposureUs);
+        int error = api.SetExposure(exposureUs);
         if (error)
             return { Operation::SetExposure, error };
+        lastExposureUs = exposureUs;
     }
     if (gainChanged)
     {
-        error = api.SetGain(gain);
+        int error = api.SetGain(gain);
         if (error)
             return { Operation::SetGain, error };
+        lastGain = gain;
     }
     return { Operation::None, 0 };
 }
