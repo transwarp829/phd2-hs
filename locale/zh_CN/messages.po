@@ -3849,7 +3849,7 @@ msgstr "修正比例"
 
 #: graph.cpp:308
 msgid "Star Mass"
-msgstr "星点质心"
+msgstr "星点总量"
 
 #: graph.cpp:310
 msgid "Star SNR"
@@ -4421,7 +4421,7 @@ msgstr "被导星丢失 - 低信噪比"
 
 #: guider_multistar.cpp:410
 msgid "Star lost - low mass"
-msgstr "被导星丢失 - 低质心"
+msgstr "被导星丢失 - 星点总量过低"
 
 #: guider_multistar.cpp:412
 msgid "Star lost - low HFD"
@@ -4433,7 +4433,7 @@ msgstr "被导星太靠边缘"
 
 #: guider_multistar.cpp:416
 msgid "Star lost - mass changed"
-msgstr "被导星丢失 - 质心改变"
+msgstr "被导星丢失 - 星点总量变化"
 
 #: guider_multistar.cpp:418 guider_multistar.cpp:1147
 msgid "No star found"
@@ -4466,7 +4466,7 @@ msgstr "自动选星位于（%.1f, %.1f）"
 #: guider_multistar.cpp:978
 #, c-format
 msgid "Mass: %.f vs %.f"
-msgstr "质心: %.f vs %.f"
+msgstr "星点总量: %.f vs %.f"
 
 #: guider_multistar.cpp:1016
 msgid "Recovering"
@@ -4489,7 +4489,7 @@ msgstr "在周围(上/下/左/右)各多少像素内搜索被导星的移动。�
 
 #: guider_multistar.cpp:1390
 msgid "Star Mass Detection"
-msgstr "星点质心变化检测"
+msgstr "星点总量变化检测"
 
 #: guider_multistar.cpp:1393
 msgid ""
@@ -4642,7 +4642,7 @@ msgstr "开始时间"
 
 #: guiding_assistant.cpp:389
 msgid "Star mass"
-msgstr "星点质心"
+msgstr "星点总量"
 
 #: guiding_assistant.cpp:393
 msgid "Elapsed time"

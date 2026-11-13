@@ -109,7 +109,7 @@
 
 
 
-<p class="xxxmsonormal">在较早的 PHD2 版本中，可以使用 4～8 秒曝光，再加非零的“帧间延迟（Time lapse）”近似实现。帧间延迟是在上一条导星指令完成后，到下一次相机曝光开始前插入固定等待。缺点是循环曝光、选星、标定、抖动和稳定等待等非稳态操作，也会被无谓拖慢。“可变延迟（Variable delay）”允许设置两种不同延迟，解决这个问题：<o:p></o:p></p>
+<p class="xxxmsonormal">在较早的 PHD2 版本中，可以使用 4～8 秒曝光，再加非零的“帧间延迟（Time lapse）”近似实现。帧间延迟是在上一条导星指令完成后，到下一次相机曝光开始前插入固定等待。缺点是循环曝光、选星、校准、抖动和稳定等待等非稳态操作，也会被无谓拖慢。“可变延迟（Variable delay）”允许设置两种不同延迟，解决这个问题：<o:p></o:p></p>
 
 <p class="xxxmsolistparagraph" style="text-indent: -0.25in; margin-left: 40px;">1.<span style="font-size: 7pt; font-family: &quot;Times New Roman&quot;,serif;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 </span>“短延迟”用于稳态导星以外的所有活动。可以为零，但部分赤道仪需要非零值，让编码器有时间完成修正。通常没有必要超过 1 秒。<o:p></o:p></p>
@@ -153,7 +153,7 @@
 <h3><a name="Ask_for_coordinates_aux_mount"></a>使用“询问坐标”的辅助赤道仪连接</h3>如果无法通过 ASCOM 或 INDI 连接赤道仪，还可以选择“询问坐标（Ask for coordinates）”辅助连接，作为一种折中办法。启用后，每次准备开始导星时都会要求输入或确认望远镜位置：<br>
 <br>
 <img style="width: 212px; height: 248px;" alt="" src="Manual_mount.png"><br>
-<br>输入当前赤纬以及向东或向西的指向后，PHD2 会自动调整标定以匹配天空位置。不必很精确，赤纬误差几度仍可使用。因此，只要每次转向不同目标时更新这些值，就无需重新标定。例如先在赤纬 0° 附近标定，再转到高赤纬目标时输入新坐标，通常比直接在天极附近标定更好。如果导星开始是由抖动操作或摄影程序的服务器指令触发，则不会弹出此对话框。要使标定补偿正确，之前的标定<span style="font-weight: bold;">必须</span>在提供了正确位置数据的情况下完成。<br>
+<br>输入当前赤纬以及向东或向西的指向后，PHD2 会自动调整校准以匹配天空位置。不必很精确，赤纬误差几度仍可使用。因此，只要每次转向不同目标时更新这些值，就无需重新校准。例如先在赤纬 0° 附近校准，再转到高赤纬目标时输入新坐标，通常比直接在天极附近校准更好。如果导星开始是由抖动操作或摄影程序的服务器指令触发，则不会弹出此对话框。要使校准补偿正确，之前的校准<span style="font-weight: bold;">必须</span>在提供了正确位置数据的情况下完成。<br>
 <br>在漂移对极轴工具中使用此选项时，对话框会略有不同：<br>
 <br>
 <img style="width: 327px; height: 350px;" alt="" src="Manual_mount_drift.png"><br>

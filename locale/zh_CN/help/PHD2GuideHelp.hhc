@@ -71,7 +71,7 @@
 			<param name="Local" value="Basic_use.htm#Exposure_Time_and_Star_Selection">
 			</OBJECT>
 		<LI> <OBJECT type="text/sitemap">
-			<param name="Name" value="标定">
+			<param name="Name" value="校准">
 			<param name="Local" value="Basic_use.htm#Automatic_Calibration">
 			</OBJECT>
 		<LI> <OBJECT type="text/sitemap">
@@ -161,7 +161,7 @@
 			<param name="Local" value="Tools.htm#Auto-Select_Star">
 			</OBJECT>
 		<LI> <OBJECT type="text/sitemap">
-			<param name="Name" value="标定详情">
+			<param name="Name" value="校准详情">
 			<param name="Local" value="Tools.htm#Calibration_Details">
 			</OBJECT>
 		<LI> <OBJECT type="text/sitemap">
@@ -181,7 +181,7 @@
 			<param name="Local" value="Tools.htm#Comet_Tracking">
 			</OBJECT>
 		<LI> <OBJECT type="text/sitemap">
-			<param name="Name" value="标定助手">
+			<param name="Name" value="校准助手">
 			<param name="Local" value="Tools.htm#Calibration_Assistant">
 			</OBJECT>
 		<LI> <OBJECT type="text/sitemap">
@@ -193,7 +193,7 @@
 			<param name="Local" value="Tools.htm#Star_cross_tool">
 			</OBJECT>
 		<LI> <OBJECT type="text/sitemap">
-			<param name="Name" value="中天翻转标定工具">
+			<param name="Name" value="中天翻转校准工具">
 			<param name="Local" value="Tools.htm#pierflip_cal_tool">
 			</OBJECT>
 	</UL>
@@ -215,7 +215,7 @@
 			<param name="Local" value="Trouble_shooting.htm#Problems-_Camera_Timeouts">
 			</OBJECT>
 		<LI> <OBJECT type="text/sitemap">
-			<param name="Name" value="标定问题">
+			<param name="Name" value="校准问题">
 			<param name="Local" value="Trouble_shooting.htm#Problems-_Mount_Control">
 			</OBJECT>
 		<LI> <OBJECT type="text/sitemap">
