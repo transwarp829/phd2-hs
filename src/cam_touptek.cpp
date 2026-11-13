@@ -303,7 +303,7 @@ struct ToupVideoCaptureWait
     void Wait() { cam.m_cond.WaitTimeout(200); }
     ToupCaptureWait::PullResult Pull()
     {
-        bool pending;
+        bool pending = false;
         if (cam.PullImage(buffer, size, &pending))
             return ToupCaptureWait::PullResult::Ready;
         return pending ? ToupCaptureWait::PullResult::Pending : ToupCaptureWait::PullResult::Failed;
@@ -698,7 +698,9 @@ bool CameraToupTek::Capture(usImage& img, const CaptureParams& captureParams)
             Debug.Write(wxString::Format("TOUPTEK: Toupcam_put_ExpoAGain(%u) failed with status 0x%x\n", new_gain, hr));
     }
 
-    if (!m_videoMode)
+    // Clear events latched while no capture was running. Base PHD2 reset this on
+    // every capture; a timeout/error event left over from between captures must
+    // not fail the next one (video mode keeps the callback running).
     { // lock scope
         wxMutexLocker lck(m_cam.m_lock);
         m_cam.m_captureResult = 0;
