@@ -91,9 +91,9 @@
 <LI><OBJECT type="text/sitemap"><param name="Name" value="日志文件位置"><param name="Local" value="Advanced_settings.htm#Log_File_Location"></OBJECT>
 <LI><OBJECT type="text/sitemap"><param name="Name" value="星点十字测试"><param name="Local" value="Trouble_shooting.htm#Star_cross_test"></OBJECT>
 <LI><OBJECT type="text/sitemap"><param name="Name" value="星点十字测试工具"><param name="Local" value="Tools.htm#Star_cross_tool"></OBJECT>
-<LI><OBJECT type="text/sitemap"><param name="Name" value="星点总量"><param name="Local" value="Glossary.html#Star_Mass"></OBJECT>
-<LI><OBJECT type="text/sitemap"><param name="Name" value="星点总量变化检测"><param name="Local" value="Advanced_settings.htm#Star_mass_change_detection"></OBJECT>
-<LI><OBJECT type="text/sitemap"><param name="Name" value="星点总量容差"><param name="Local" value="Advanced_settings.htm#Star_mass_tolerance"></OBJECT>
+<LI><OBJECT type="text/sitemap"><param name="Name" value="星点总亮度"><param name="Local" value="Glossary.html#Star_Mass"></OBJECT>
+<LI><OBJECT type="text/sitemap"><param name="Name" value="星点总亮度变化检测"><param name="Local" value="Advanced_settings.htm#Star_mass_change_detection"></OBJECT>
+<LI><OBJECT type="text/sitemap"><param name="Name" value="星点总亮度容差"><param name="Local" value="Advanced_settings.htm#Star_mass_tolerance"></OBJECT>
 <LI><OBJECT type="text/sitemap"><param name="Name" value="星点轮廓与靶图"><param name="Local" value="Visualization.htm#Star_Profile_and_Target_Displays"></OBJECT>
 <LI><OBJECT type="text/sitemap"><param name="Name" value="星点饱和检测"><param name="Local" value="Advanced_settings.htm#Star_saturation_detection"></OBJECT>
 <LI><OBJECT type="text/sitemap"><param name="Name" value="暗场"><param name="Local" value="Darks_BadPixel_Maps.htm#Dark_Frames"></OBJECT>
