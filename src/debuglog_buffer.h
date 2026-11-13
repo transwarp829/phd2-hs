@@ -108,8 +108,7 @@ public:
         m_pending += written;
         if (written != length)
             return Error::Write;
-        if ((m_pending >= m_batchSize || now - m_lastFlush >= m_intervalMs) && now >= m_nextFlushAttempt &&
-            !Flush(api, now))
+        if ((m_pending >= m_batchSize || now - m_lastFlush >= m_intervalMs) && now >= m_nextFlushAttempt && !Flush(api, now))
             return Error::Flush;
         return error;
     }

@@ -33,8 +33,9 @@ and HTML dependencies locally. Tests do not download dependencies themselves.
 
 If wxWidgets is unavailable, `-DPHD2_TEST_WXIMAGE=OFF` runs the camera tests
 and, when Python is installed, the structural help checks; it explicitly skips
-the pixel and native help-loader tests. The normal full PHD2 build also registers
-this suite with CTest.
+the pixel and native help-loader tests. The normal full PHD2 build registers
+this suite with CTest only when configured with `-DPHD2_BUILD_TESTS=ON` (off by
+default so release builds do not carry the test binaries).
 
 Run just the help checks with:
 

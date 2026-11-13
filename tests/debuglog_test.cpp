@@ -54,8 +54,7 @@ struct MemoryFiles
     }
 };
 
-static debuglog::Buffer::Error Write(debuglog::Buffer& buffer, MemoryFiles& files,
-                                    const std::string& text, std::uint64_t time)
+static debuglog::Buffer::Error Write(debuglog::Buffer& buffer, MemoryFiles& files, const std::string& text, std::uint64_t time)
 {
     return buffer.Write(files, text.data(), text.size(), time);
 }
@@ -88,7 +87,7 @@ static void RotationBoundariesAndExistingFiles()
     Require(files.rotations == 0 && buffer.Size() == 10, "exact limit must fit existing file");
     files.operations.clear();
     Require(Write(buffer, files, "3", 2) == debuglog::Buffer::Error::None, "rollover write");
-    Require(files.operations == std::vector<std::string>({"flush", "rotate", "write"}), "flush before opening next part");
+    Require(files.operations == std::vector<std::string>({ "flush", "rotate", "write" }), "flush before opening next part");
     Require(files.persisted[0] == "existing12" && files.parts[1] == "3", "old file must remain intact");
     Require(buffer.Size() == 1 && buffer.Pending() == 1, "new part counters");
 
@@ -140,7 +139,8 @@ static void FailuresKeepDiagnosticsAndRetry()
     Write(buffer, flushFailure, "1234567890", 1);
     flushFailure.failFlush = true;
     Require(Write(buffer, flushFailure, "a", 2) == debuglog::Buffer::Error::Flush, "flush failure must be reported");
-    Require(flushFailure.rotations == 0 && buffer.Pending() == 11, "failed flush must preserve pending tail and original handle");
+    Require(flushFailure.rotations == 0 && buffer.Pending() == 11,
+            "failed flush must preserve pending tail and original handle");
     Require(buffer.FlushIfDue(flushFailure, 1000), "timer must wait out the flush backoff");
     Require(flushFailure.flushes == 1, "no flush attempt inside the backoff window");
     Require(!buffer.FlushIfDue(flushFailure, 1003), "timer must surface failed flush after the backoff");
@@ -192,32 +192,43 @@ static void NamesAndRestartSelection()
     Require(parsed.timestamp == "2026-11-13_015959" && parsed.instance == 1 && !parsed.qualified && parsed.part == 0,
             "legacy timestamp and instance must remain compatible");
     Require(debuglog::ParseFileName("PHD2_DebugLog_2_2026-11-13_015959_part003.txt", parsed), "instance part filename");
-    Require(parsed.instance == 2 && parsed.part == 3 && parsed.SessionKey() == "2_2026-11-13_015959", "pairing key keeps instance");
+    Require(parsed.instance == 2 && parsed.part == 3 && parsed.SessionKey() == "2_2026-11-13_015959",
+            "pairing key keeps instance");
     Require(debuglog::MakePartName(base, 0) == base, "base part keeps original name");
     Require(debuglog::MakePartName(base, 1) == "PHD2_DebugLog_2026-11-13_015959_part001.txt", "first part name");
     Require(debuglog::MakePartName(base, 1000) == "PHD2_DebugLog_2026-11-13_015959_part1000.txt", "large part index");
     const std::vector<std::string> names = { base, debuglog::MakePartName(base, 2), debuglog::MakePartName(base, 10),
-        "PHD2_DebugLog_2_2026-11-13_015959_part999.txt", "PHD2_DebugLog_2026-11-12_015959_part100.txt" };
+                                             "PHD2_DebugLog_2_2026-11-13_015959_part999.txt",
+                                             "PHD2_DebugLog_2026-11-12_015959_part100.txt" };
     Require(debuglog::LatestPart(base, names) == 10, "restart must choose highest matching part despite gaps");
     Require(debuglog::LatestPart(base, {}) == 0, "new or empty session starts with base file");
-    for (const std::string& invalid : { "PHD2_DebugLog_2026-11-13_015959_part0.txt",
-            "PHD2_DebugLog_2026-11-13_015959_part-1.txt", "PHD2_DebugLog_2026-11-13_015959_part9999999999999.txt",
-            "PHD2_DebugLog_0_2026-11-13_015959.txt", "PHD2_DebugLog_2026-11-13_015959_backup.txt",
-            "PHD2_GuideLog_2026-11-13_015959.txt" })
+    for (const std::string& invalid :
+         { "PHD2_DebugLog_2026-11-13_015959_part0.txt", "PHD2_DebugLog_2026-11-13_015959_part-1.txt",
+           "PHD2_DebugLog_2026-11-13_015959_part9999999999999.txt", "PHD2_DebugLog_0_2026-11-13_015959.txt",
+           "PHD2_DebugLog_2026-11-13_015959_backup.txt", "PHD2_GuideLog_2026-11-13_015959.txt" })
         Require(!debuglog::ParseFileName(invalid, parsed), "invalid debug filename must be ignored");
 }
 
 struct StdioFiles
 {
     std::vector<FILE *> parts;
-    StdioFiles() { parts.push_back(std::tmpfile()); Require(parts.back() != nullptr, "create temporary log"); }
-    ~StdioFiles() { for (FILE *part : parts) std::fclose(part); }
+    StdioFiles()
+    {
+        parts.push_back(std::tmpfile());
+        Require(parts.back() != nullptr, "create temporary log");
+    }
+    ~StdioFiles()
+    {
+        for (FILE *part : parts)
+            std::fclose(part);
+    }
     size_t Write(const char *data, size_t size) { return std::fwrite(data, 1, size, parts.back()); }
     bool Flush() { return std::fflush(parts.back()) == 0; }
     bool Rotate(std::uint64_t& size)
     {
         FILE *next = std::tmpfile();
-        if (!next) return false;
+        if (!next)
+            return false;
         parts.push_back(next);
         size = 0;
         return true;
@@ -245,7 +256,8 @@ static void RealFileWrites()
     buffer.Write(files, "tail\n", 5, 5);
     Require(files.parts.size() == 2, "actual files must rotate");
     Require(buffer.FlushIfDue(files, 1005), "real idle tail flush");
-    Require(files.Read(0) == "old\r\nnext\n" && files.Read(1) == "tail\n", "actual file contents must preserve mixed old/new lines");
+    Require(files.Read(0) == "old\r\nnext\n" && files.Read(1) == "tail\n",
+            "actual file contents must preserve mixed old/new lines");
 }
 
 int main()

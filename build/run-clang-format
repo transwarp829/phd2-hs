@@ -9,6 +9,7 @@ cd "$TOP"
 SRCDIRS=(
   src
   contributions/MPI_IS_gaussian_process
+  tests
 )
 readarray -t files < <(find "${SRCDIRS[@]}" -name '*.cpp' -o -name '*.h')
 

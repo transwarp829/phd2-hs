@@ -125,7 +125,12 @@ enable_testing()
 include(thirdparty/thirdparty.cmake)
 
 # Hardware-free regression tests for capture transitions and image previews.
-add_subdirectory(tests)
+# Off by default: a normal PHD2 build should not carry test binaries. Enable
+# with -DPHD2_BUILD_TESTS=ON (the dedicated CI test job builds tests/ directly).
+option(PHD2_BUILD_TESTS "Build the hardware-free regression tests" OFF)
+if(PHD2_BUILD_TESTS)
+    add_subdirectory(tests)
+endif()
 
 
 #################################################################################
