@@ -62,22 +62,34 @@ void ConfigSection::SelectProfile(int profileId)
 // warnings and silently fall back to the default value. None of these accessors has
 // any business caring which form a number was stored in, so try both, with the log
 // suppressed for the attempt that does not apply.
-static bool ReadLooseString(wxConfig *cfg, const wxString &path, wxString *out)
+static bool ReadLooseString(wxConfig *cfg, const wxString& path, wxString *out)
 {
     wxString str;
     {
         wxLogNull noLog;
-        if (cfg->Read(path, &str)) { *out = str; return true; }
+        if (cfg->Read(path, &str))
+        {
+            *out = str;
+            return true;
+        }
     }
     long l;
     {
         wxLogNull noLog;
-        if (cfg->Read(path, &l)) { *out = wxString::Format("%ld", l); return true; }
+        if (cfg->Read(path, &l))
+        {
+            *out = wxString::Format("%ld", l);
+            return true;
+        }
     }
     double d;
     {
         wxLogNull noLog;
-        if (cfg->Read(path, &d)) { *out = wxString::Format("%.17g", d); return true; }
+        if (cfg->Read(path, &d))
+        {
+            *out = wxString::Format("%.17g", d);
+            return true;
+        }
     }
     return false;
 }

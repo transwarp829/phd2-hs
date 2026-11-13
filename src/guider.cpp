@@ -498,10 +498,18 @@ static void render_downscaled(const usImage& img, wxImage *out, int dstW, int ds
             unsigned int v;
             switch (n)
             {
-            case 1: v = sum; break;
-            case 2: v = sum >> 1; break;
-            case 4: v = sum >> 2; break;
-            default: v = sum / (unsigned) n; break;
+            case 1:
+                v = sum;
+                break;
+            case 2:
+                v = sum >> 1;
+                break;
+            case 4:
+                v = sum >> 2;
+                break;
+            default:
+                v = sum / (unsigned) n;
+                break;
             }
 
             const unsigned char d = lut[v];
@@ -529,7 +537,6 @@ static wxGraphicsContext *make_graphics_context(wxDC& dc)
 bool Guider::PaintHelper(wxDC& dc, wxMemoryDC& memDC)
 {
     bool bError = false;
-
 
     int XImgSize = 0, YImgSize = 0;
 
@@ -634,13 +641,12 @@ bool Guider::PaintHelper(wxDC& dc, wxMemoryDC& memDC)
                         delete m_starCropImage;
                         m_starCropImage = new wxImage(cw, cw, false);
                     }
-                    unsigned char *lut = usImage::BuildGammaLut(m_pCurrentImage->FiltMin, m_pCurrentImage->FiltMax,
-                                                                pFrame->Stretch_gamma);
+                    unsigned char *lut =
+                        usImage::BuildGammaLut(m_pCurrentImage->FiltMin, m_pCurrentImage->FiltMax, pFrame->Stretch_gamma);
                     unsigned char *dst = m_starCropImage->GetData();
                     if (dst && lut)
                     {
-                        const unsigned short *base = m_pCurrentImage->ImageData +
-                            (size_t) (cyp - half) * W + (cxp - half);
+                        const unsigned short *base = m_pCurrentImage->ImageData + (size_t) (cyp - half) * W + (cxp - half);
                         for (int y = 0; y < cw; ++y)
                         {
                             const unsigned short *row = base + (size_t) y * W;
@@ -655,13 +661,11 @@ bool Guider::PaintHelper(wxDC& dc, wxMemoryDC& memDC)
                         m_starCropX0 = cxp - half;
                         m_starCropY0 = cyp - half;
                         m_starCropSz = half;
-
                     }
                     delete[] lut;
                 }
             }
         }
-
 
         if (XImgSize <= 0 || YImgSize <= 0)
         {
@@ -1471,7 +1475,6 @@ void Guider::UpdateGuideState(usImage *pImage, bool bStopping)
         if (pFrame && pFrame->pStatsWin)
         {
             pFrame->pStatsWin->UpdateImageSize(pImage->Size);
-            pFrame->pStatsWin->UpdateFrameRate();
         }
 
         if (bStopping)

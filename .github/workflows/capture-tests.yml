@@ -1,0 +1,25 @@
+name: Capture regression tests
+on: [push, pull_request]
+
+jobs:
+  hardware-free:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install image library
+        run: sudo apt-get update && sudo apt-get install -y libwxgtk3.2-dev libcfitsio-dev libcurl4-openssl-dev libindi-dev
+      - name: Configure
+        run: cmake -S tests -B build-capture-tests -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build-capture-tests --parallel 2
+      - name: Test
+        run: ctest --test-dir build-capture-tests --output-on-failure
+      - name: Compile driver integration
+        run: |
+          c++ -std=c++14 -fsyntax-only $(wx-config --cxxflags) \
+            -DHAVE_QHY_CAMERA -DHAVE_TOUPTEK_CAMERA -DHAVE_ZWO_CAMERA \
+            -Isrc -I. -Icameras/qhyccdlibs/include \
+            -Icameras/toupcam/include -Icameras/zwolibs/include \
+            src/cam_qhy.cpp src/cam_touptek.cpp src/cam_zwo.cpp src/star_profile.cpp \
+            src/debuglog.cpp src/log_uploader.cpp src/statswindow.cpp src/guider.cpp \
+            src/myframe.cpp src/phd.cpp

@@ -34,6 +34,7 @@
 
 #include "log_uploader.h"
 #include "phd.h"
+#include "log_upload_files.h"
 
 #include <algorithm>
 #include <curl/curl.h>
@@ -42,7 +43,6 @@
 #include <wx/clipbrd.h>
 #include <wx/dir.h>
 #include <wx/hyperlink.h>
-#include <wx/regex.h>
 #include <wx/richtooltip.h>
 #include <wx/tokenzr.h>
 #include <wx/wfstream.h>
@@ -76,7 +76,10 @@ enum SummaryState
 
 struct Session
 {
-    wxString timestamp;
+    std::string key;
+    wxString guideName;
+    std::vector<std::string> debugNames;
+    unsigned int instance = 1;
     wxDateTime start;
     GuideLogSummaryInfo summary;
     SummaryState summary_loaded = ST_BEGIN;
@@ -141,14 +144,9 @@ void LogScanner::Init(wxGrid *grid)
     FindNextRow();
 }
 
-static wxString DebugLogName(const Session& session)
-{
-    return "PHD2_DebugLog_" + session.timestamp + ".txt";
-}
-
 static wxString GuideLogName(const Session& session)
 {
-    return "PHD2_GuideLog_" + session.timestamp + ".txt";
+    return session.guideName;
 }
 
 static wxString FormatTimeSpan(const wxTimeSpan& dt)
@@ -417,7 +415,7 @@ static void ReallyFlush(const wxFFile& ffile)
 
 static void FlushLogs()
 {
-    ReallyFlush(Debug);
+    Debug.FlushToDisk();
     ReallyFlush(GuideLog.File());
 }
 
@@ -471,7 +469,10 @@ static void DoSort(wxGrid *grid)
     for (int r = 0; r < nr_sessions; r++)
     {
         const Session& session = s_session[s_session_idx[r]];
-        grid->SetCellValue(r, COL_NIGHTOF, FormatNightOf(wxGetApp().ImagingDay(session.start)));
+        wxString night = FormatNightOf(wxGetApp().ImagingDay(session.start));
+        if (session.instance > 1)
+            night += wxString::Format(" #%u", session.instance);
+        grid->SetCellValue(r, COL_NIGHTOF, night);
         FillActivity(grid, r, session, false);
         if (session.has_guide || session.has_debug)
         {
@@ -489,82 +490,32 @@ static void DoSort(wxGrid *grid)
     }
 }
 
+static std::vector<std::string> LogFileNames()
+{
+    wxArrayString paths;
+    wxDir::GetAllFiles(Debug.GetLogDir(), &paths, "*.txt", wxDIR_FILES);
+    std::vector<std::string> names;
+    for (const auto& path : paths)
+    {
+        std::string name = wxFileName(path).GetFullName().ToStdString();
+        debuglog::FileName parsed;
+        if (log_upload::ParseGuideFileName(name, parsed))
+        {
+            // Preserve the existing exclusion of empty/unreadable guide logs.
+            wxStructStat st;
+            if (::wxStat(path, &st) != 0 || st.st_size == 0)
+                continue;
+        }
+        names.push_back(name);
+    }
+    return names;
+}
+
 static void LoadGrid(wxGrid *grid)
 {
     wxBusyCursor spin;
-
     FlushLogs();
-
-    std::map<wxString, Session> logs;
-
-    const wxString& logDir = Debug.GetLogDir();
-    wxArrayString a;
-    int nr = wxDir::GetAllFiles(logDir, &a, "*.txt", wxDIR_FILES);
-
-    // PHD2_GuideLog_2017-12-09_044510.txt
-    {
-        wxRegEx re("PHD2_GuideLog_[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{6}\\.txt$");
-        for (int i = 0; i < nr; i++)
-        {
-            const wxString& l = a[i];
-            if (!re.Matches(l))
-                continue;
-
-            // omit zero-size guide logs
-            wxStructStat st;
-            int ret = ::wxStat(l, &st);
-            if (ret != 0)
-                continue;
-            if (st.st_size == 0)
-                continue;
-
-            size_t start, len;
-            re.GetMatch(&start, &len, 0);
-
-            wxString timestamp(l, start + 14, 17);
-            auto it = logs.find(timestamp);
-            if (it == logs.end())
-            {
-                Session s;
-                s.timestamp = timestamp;
-                s.start = SessionStart(timestamp);
-                s.has_guide = true;
-                logs[timestamp] = s;
-            }
-            else
-            {
-                it->second.has_guide = true;
-            }
-        }
-    }
-
-    // PHD2_DebugLog_2017-12-09_044510.txt
-    {
-        wxRegEx re("PHD2_DebugLog_[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{6}\\.txt$");
-        for (int i = 0; i < nr; i++)
-        {
-            const wxString& l = a[i];
-            if (!re.Matches(l))
-                continue;
-
-            size_t start, len;
-            re.GetMatch(&start, &len, 0);
-            wxString timestamp = l.substr(start + 14, 17);
-            auto it = logs.find(timestamp);
-            if (it == logs.end())
-            {
-                Session s;
-                s.timestamp = timestamp;
-                s.start = SessionStart(timestamp);
-                s.has_debug = true;
-                logs[timestamp] = s;
-            }
-            else
-            {
-                it->second.has_debug = true;
-            }
-        }
-    }
+    const auto logs = log_upload::GroupFiles(LogFileNames());
 
     s_session.clear();
     s_session_idx.clear();
@@ -573,7 +524,15 @@ static void LoadGrid(wxGrid *grid)
     int r = 0;
     for (auto it = logs.begin(); it != logs.end(); ++it, ++r)
     {
-        Session& session = it->second;
+        const log_upload::SessionFiles& files = it->second;
+        Session session;
+        session.key = it->first;
+        session.guideName = wxString::FromUTF8(files.guide.c_str());
+        session.debugNames = files.debug;
+        session.instance = files.session.instance;
+        session.start = SessionStart(wxString::FromUTF8(files.session.timestamp.c_str()));
+        session.has_guide = !files.guide.empty();
+        session.has_debug = !files.debug.empty();
         QuickInitSummary(session);
         s_session.push_back(session);
         s_session_idx.push_back(r);
@@ -1231,6 +1190,8 @@ void LogUploadDialog::ExecUpload()
     m_back->Enable(false);
 
     BgUpload upload(this);
+    FlushLogs();
+    const auto currentLogNames = LogFileNames();
 
     for (int r = 0; r < s_session.size(); r++)
     {
@@ -1243,7 +1204,11 @@ void LogUploadDialog::ExecUpload()
         if (session.has_guide)
             upload.m_input.push_back(FileData(GuideLogName(session), session.start));
         if (session.has_debug)
-            upload.m_input.push_back(FileData(DebugLogName(session), session.start));
+        {
+            const auto files = log_upload::DebugFilesForUpload(session.key, session.debugNames, currentLogNames);
+            for (const auto& name : files)
+                upload.m_input.push_back(FileData(wxString::FromUTF8(name.c_str()), session.start));
+        }
     }
 
     upload.SetPopupDelay(500);

@@ -39,6 +39,7 @@
 # include "cam_touptek.h"
 # include "toupcam.h"
 # include "image_math.h"
+# include "toup_capture_wait.h"
 
 // Touptek API uses these Windows definitions even on non-Windows platforms
 # ifndef S_OK
@@ -63,10 +64,15 @@ struct ToupCam
     wxByte m_curBin;
     bool m_started;
     unsigned int m_captureResult;
+    unsigned long long m_eventGeneration;
     wxMutex m_lock;
     wxCondition m_cond;
 
-    ToupCam() : m_h(nullptr), m_buffer(nullptr), m_tmpbuf(nullptr), m_started(false), m_cond(m_lock) { }
+    ToupCam()
+        : m_h(nullptr), m_buffer(nullptr), m_tmpbuf(nullptr), m_started(false), m_captureResult(0), m_eventGeneration(0),
+          m_cond(m_lock)
+    {
+    }
 
     ~ToupCam()
     {
@@ -106,6 +112,7 @@ struct ToupCam
             {
                 wxMutexLocker lck(cam->m_lock);
                 cam->m_captureResult = event;
+                ++cam->m_eventGeneration;
             }
             cam->m_cond.Broadcast();
             break;
@@ -122,6 +129,11 @@ struct ToupCam
 
         // Debug.Write("TOUPTEK: startcapture\n");
 
+        {
+            wxMutexLocker lck(m_lock);
+            m_captureResult = 0;
+        }
+
         HRESULT hr;
         if (FAILED(hr = Toupcam_StartPullModeWithCallback(m_h, &CamEventCb, this)))
         {
@@ -132,7 +144,7 @@ struct ToupCam
         m_started = true;
     }
 
-    bool _PullImage(void *buf, wxSize *sz)
+    bool _PullImage(void *buf, wxSize *sz, bool *pending = nullptr)
     {
         HRESULT hr;
         ToupcamFrameInfoV3 info;
@@ -149,6 +161,12 @@ struct ToupCam
         }
         // E_PENDING means "no frame ready yet"; the caller already waited for the
         // image event, so retry briefly instead of treating it as a failure.
+        // Video capture instead waits on the callback with its normal watchdog.
+        if (pending && hr == (HRESULT) 0x8000000A)
+        {
+            *pending = true;
+            return false;
+        }
         for (int i = 0; i < 50 && hr == 0x8000000A; ++i)
         {
             wxMilliSleep(2);
@@ -165,14 +183,15 @@ struct ToupCam
         return false;
     }
 
-
-    bool PullImage(void *buf, wxSize *sz)
+    bool PullImage(void *buf, wxSize *sz, bool *pending = nullptr)
     {
+        if (pending)
+            *pending = false;
         if (m_curBin == 1 || !SoftwareBinning())
-            return _PullImage(buf, sz);
+            return _PullImage(buf, sz, pending);
 
         // software binning
-        if (!_PullImage(m_tmpbuf, sz))
+        if (!_PullImage(m_tmpbuf, sz, pending))
             return false;
         if (m_bpp == 8)
             BinPixels8(buf, m_tmpbuf, *sz, m_curBin);
@@ -259,10 +278,42 @@ struct ToupCam
     }
 };
 
+struct ToupVideoCaptureWait
+{
+    ToupCam& cam;
+    void *buffer;
+    wxSize *size;
+    CameraWatchdog& watchdog;
+    unsigned int errorEvent = 0;
+
+    void Lock() { cam.m_lock.Lock(); }
+    void Unlock() { cam.m_lock.Unlock(); }
+    unsigned long long Generation() const { return cam.m_eventGeneration; }
+    bool HasError()
+    {
+        if (cam.m_captureResult != 0 && cam.m_captureResult != TOUPCAM_EVENT_IMAGE)
+        {
+            errorEvent = cam.m_captureResult;
+            return true;
+        }
+        return false;
+    }
+    bool Interrupted() const { return WorkerThread::InterruptRequested(); }
+    bool Expired() const { return watchdog.Expired(); }
+    void Wait() { cam.m_cond.WaitTimeout(200); }
+    ToupCaptureWait::PullResult Pull()
+    {
+        bool pending;
+        if (cam.PullImage(buffer, size, &pending))
+            return ToupCaptureWait::PullResult::Ready;
+        return pending ? ToupCaptureWait::PullResult::Pending : ToupCaptureWait::PullResult::Failed;
+    }
+};
+
 class CameraToupTek : public GuideCamera
 {
     ToupCam m_cam;
-    int m_speed;   // USB transfer speed; the connect path used to pin this to 0
+    int m_speed; // USB transfer speed; the connect path used to pin this to 0
     // TOUPCAM_OPTION_TRIGGER: 1 = one software trigger per frame (upstream
     // behaviour), 0 = free-running video mode, which is the SDK default
     bool m_videoMode;
@@ -471,8 +522,7 @@ bool CameraToupTek::Connect(const wxString& camIdArg)
         m_speed = (int) info->model->maxspeed;
     if (info->model)
         pConfig->Profile.SetInt("/camera/ToupTek/MaxSpeed", (int) info->model->maxspeed);
-    Debug.Write(wxString::Format("TOUPTEK: speed option = %d (max %u)\n", m_speed,
-                                 info->model ? info->model->maxspeed : 0));
+    Debug.Write(wxString::Format("TOUPTEK: speed option = %d (max %u)\n", m_speed, info->model ? info->model->maxspeed : 0));
     if (FAILED(hr = Toupcam_put_Speed(m_cam.m_h, (unsigned short) m_speed)))
         Debug.Write(wxString::Format("TOUPTEK: Toupcam_put_Speed(%d) failed with status 0x%x\n", m_speed, hr));
 
@@ -507,14 +557,14 @@ bool CameraToupTek::Connect(const wxString& camIdArg)
     // let the profile opt in.
     m_videoMode = pConfig->Profile.GetBoolean("/camera/ToupTek/VideoMode", true);
     m_cam.SetOption(TOUPCAM_OPTION_TRIGGER, m_videoMode ? 0 : 1);
-    Debug.Write(wxString::Format("TOUPTEK: trigger option = %d (%s)\n",
-                                 m_videoMode ? 0 : 1, m_videoMode ? "video" : "software trigger"));
+    Debug.Write(wxString::Format("TOUPTEK: trigger option = %d (%s)\n", m_videoMode ? 0 : 1,
+                                 m_videoMode ? "video" : "software trigger"));
     // the range is mode dependent on some bodies, so log it next to the mode
     {
         unsigned expMin = 0, expMax = 0, expDef = 0;
         if (SUCCEEDED(Toupcam_get_ExpTimeRange(m_cam.m_h, &expMin, &expMax, &expDef)))
-            Debug.Write(wxString::Format("TOUPTEK: exposure range %u .. %u us (default %u), mode=%s\n",
-                                         expMin, expMax, expDef, m_videoMode ? "video" : "trigger"));
+            Debug.Write(wxString::Format("TOUPTEK: exposure range %u .. %u us (default %u), mode=%s\n", expMin, expMax, expDef,
+                                         m_videoMode ? "video" : "trigger"));
         else
             Debug.Write("TOUPTEK: Toupcam_get_ExpTimeRange failed\n");
     }
@@ -539,8 +589,7 @@ bool CameraToupTek::Connect(const wxString& camIdArg)
     unsigned short speed;
     if (SUCCEEDED(hr = Toupcam_get_Speed(m_cam.m_h, &speed)))
     {
-        Debug.Write(wxString::Format("TOUPTEK: speed = %hu (requested %d), max = %u\n", speed, m_speed,
-                                     info->model->maxspeed));
+        Debug.Write(wxString::Format("TOUPTEK: speed = %hu (requested %d), max = %u\n", speed, m_speed, info->model->maxspeed));
         if ((int) speed != m_speed)
         {
             if (FAILED(hr = Toupcam_put_Speed(m_cam.m_h, (unsigned short) m_speed)))
@@ -649,6 +698,7 @@ bool CameraToupTek::Capture(usImage& img, const CaptureParams& captureParams)
             Debug.Write(wxString::Format("TOUPTEK: Toupcam_put_ExpoAGain(%u) failed with status 0x%x\n", new_gain, hr));
     }
 
+    if (!m_videoMode)
     { // lock scope
         wxMutexLocker lck(m_cam.m_lock);
         m_cam.m_captureResult = 0;
@@ -663,22 +713,41 @@ bool CameraToupTek::Capture(usImage& img, const CaptureParams& captureParams)
     // "The timeout is recommended for not less than (Exposure Time * 102% + 8 Seconds)."
     CameraWatchdog watchdog(duration * 102 / 100, GetTimeoutMs());
 
+    void *buf = useSubframe || m_cam.m_bpp == 8 ? m_cam.m_buffer : img.ImageData;
+    wxSize sz;
+    bool framePulled = false;
+    unsigned int captureResult;
+
+    if (m_videoMode)
+    {
+        ToupVideoCaptureWait wait { m_cam, buf, &sz, watchdog };
+        ToupCaptureWait::Result result = ToupCaptureWait::WaitForFrame(wait);
+        if (result == ToupCaptureWait::Result::PullError)
+        {
+            DisconnectWithAlert(_("Capture failed, unable to pull image data from camera"), RECONNECT);
+            return true;
+        }
+        framePulled = result == ToupCaptureWait::Result::Ready;
+        captureResult = framePulled ? TOUPCAM_EVENT_IMAGE : wait.errorEvent;
+    }
+    else
     { // lock scope
         wxMutexLocker lck(m_cam.m_lock);
         while (m_cam.m_captureResult == 0 && !WorkerThread::InterruptRequested() && !watchdog.Expired())
         {
             m_cam.m_cond.WaitTimeout(200);
         }
+        captureResult = m_cam.m_captureResult;
     } // lock scope
 
-    if (m_cam.m_captureResult != TOUPCAM_EVENT_IMAGE)
+    if (captureResult != TOUPCAM_EVENT_IMAGE)
     {
-        if (m_cam.m_captureResult != 0)
+        if (captureResult != 0)
         {
-            Debug.Write(wxString::Format("TOUPTEK: capture failed with status 0x%x\n", m_cam.m_captureResult));
+            Debug.Write(wxString::Format("TOUPTEK: capture failed with status 0x%x\n", captureResult));
 
             wxString err;
-            switch (m_cam.m_captureResult)
+            switch (captureResult)
             {
             case TOUPCAM_EVENT_DISCONNECTED:
                 err = _("Capture failed: the camera disconnected");
@@ -711,15 +780,7 @@ bool CameraToupTek::Capture(usImage& img, const CaptureParams& captureParams)
 
     // Debug.Write("TOUPTEK: capture: image ready\n");
 
-    void *buf;
-    wxSize sz;
-
-    if (useSubframe || m_cam.m_bpp == 8)
-        buf = m_cam.m_buffer;
-    else
-        buf = img.ImageData;
-
-    if (!m_cam.PullImage(buf, &sz))
+    if (!framePulled && !m_cam.PullImage(buf, &sz))
     {
         DisconnectWithAlert(_("Capture failed, unable to pull image data from camera"), RECONNECT);
         return true;
@@ -888,7 +949,10 @@ ToupTekCameraDlg::ToupTekCameraDlg() : wxDialog(wxGetApp().GetTopWindow(), wxID_
     m_realTimeChoice->Append(_("0 - Off: stop grabbing when the queue is full"));
     m_realTimeChoice->Append(_("1 - Both: drop all pending frames"));
     m_realTimeChoice->Append(_("2 - Soft: drop pending, keep DDR"));
-    m_realTimeChoice->SetToolTip(_("Toupcam_put_RealTime: the stale-frame policy, not a rate limit. 0 keeps everything and stalls when the queue is full; 1 drops pending frames, which on this body also costs every other frame (65 ms instead of 34); 2 drops pending frames without touching the DDR buffer and keeps the full rate."));
+    m_realTimeChoice->SetToolTip(
+        _("Toupcam_put_RealTime: the stale-frame policy, not a rate limit. 0 keeps everything and stalls when the queue is "
+          "full; 1 drops pending frames, which on this body also costs every other frame (65 ms instead of 34); 2 drops "
+          "pending frames without touching the DDR buffer and keeps the full rate."));
     rtRow->Add(m_realTimeChoice, 0, wxALL, 5);
     sbSizerFast->Add(rtRow, 0, wxEXPAND, 0);
 

@@ -38,6 +38,7 @@
 
 # include "cam_zwo.h"
 # include "ASICamera2.h"
+# include "zwo_capture_state.h"
 
 # ifdef __WINDOWS__
 
@@ -97,13 +98,54 @@ public:
     bool GetSensorTemperature(double *temperature) override;
 
 private:
-    void StopCapture();
+    bool StopCapture();
     bool StopExposure();
 
     wxSize BinnedFrameSize(unsigned int binning);
 };
 
-Camera_ZWO::Camera_ZWO() : m_buffer(nullptr)
+struct ZwoCaptureApi
+{
+    int cameraId;
+
+    int GetExposure(long& value)
+    {
+        ASI_BOOL automatic;
+        return ASIGetControlValue(cameraId, ASI_EXPOSURE, &value, &automatic);
+    }
+    int GetGain(long& value)
+    {
+        ASI_BOOL automatic;
+        return ASIGetControlValue(cameraId, ASI_GAIN, &value, &automatic);
+    }
+    int SetExposure(long value)
+    {
+        Debug.Write(wxString::Format("ZWO: set CONTROL_EXPOSURE %ld\n", value));
+        return ASISetControlValue(cameraId, ASI_EXPOSURE, value, ASI_FALSE);
+    }
+    int SetGain(long value)
+    {
+        Debug.Write(wxString::Format("ZWO: set CONTROL_GAIN %ld\n", value));
+        return ASISetControlValue(cameraId, ASI_GAIN, value, ASI_FALSE);
+    }
+    int StopVideo()
+    {
+        Debug.Write("ZWO: stopcapture\n");
+        return ASIStopVideoCapture(cameraId);
+    }
+    int StartVideo()
+    {
+        Debug.Write("ZWO: startcapture\n");
+        return ASIStartVideoCapture(cameraId);
+    }
+};
+
+static void LogCaptureError(const zwo_capture::Result& result)
+{
+    Debug.Write(wxString::Format("ZWO: %s failed: %d\n", zwo_capture::OperationName(result.operation), result.error));
+}
+
+Camera_ZWO::Camera_ZWO() : m_buffer(nullptr), m_capturing(false)
 {
     Name = _T("ZWO ASI Camera");
     PropertyDialogType = PROPDLG_WHEN_DISCONNECTED;
@@ -161,15 +203,18 @@ ZWOCameraDlg::ZWOCameraDlg() : wxDialog(wxGetApp().GetTopWindow(), wxID_ANY, _("
     sbSizerBw->Add(new wxStaticText(this, wxID_ANY, _("USB bandwidth")), 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
     // ASI_BANDWIDTHOVERLOAD is 40..100 on every ASI body; the driver clamps to the
     // range the SDK reports for the connected camera anyway.
-    m_bandwidth = new wxSpinCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize,
-                                 wxSP_ARROW_KEYS, 40, 100, 40);
-    m_bandwidth->SetToolTip(_("USB bandwidth overload, 40 .. 100. Higher values give shorter readout on fast links; the lowest value is the most tolerant of marginal cables. Takes effect on the next connection."));
+    m_bandwidth = new wxSpinCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 40, 100, 40);
+    m_bandwidth->SetToolTip(_("USB bandwidth overload, 40 .. 100. Higher values give shorter readout on fast links; the lowest "
+                              "value is the most tolerant of marginal cables. Takes effect on the next connection."));
     sbSizerBw->Add(m_bandwidth, 0, wxALL, 5);
     m_videoMode = new wxCheckBox(this, wxID_ANY, _("Video mode"));
-    m_videoMode->SetToolTip(_("Use the SDK's free-running video capture instead of one snapshot per frame. Faster at short exposures, but the camera then integrates while a guide pulse is in progress. Off is the upstream behaviour."));
+    m_videoMode->SetToolTip(
+        _("Use the SDK's free-running video capture instead of one snapshot per frame. Faster at short exposures, but the "
+          "camera then integrates while a guide pulse is in progress. Off is the upstream behaviour."));
     sbSizerBw->Add(m_videoMode, 0, wxALL, 5);
     m_highSpeed = new wxCheckBox(this, wxID_ANY, _("High speed mode"));
-    m_highSpeed->SetToolTip(_("ASI_HIGH_SPEED_MODE: faster readout, usually at a lower ADC depth. PHD2 works in 8-bit, so this is normally a free speed-up; ignore it if the camera reports the control as read-only."));
+    m_highSpeed->SetToolTip(_("ASI_HIGH_SPEED_MODE: faster readout, usually at a lower ADC depth. PHD2 works in 8-bit, so this "
+                              "is normally a free speed-up; ignore it if the camera reports the control as read-only."));
     sbSizerBw->Add(m_highSpeed, 0, wxALL, 5);
     bSizer12->Add(sbSizerBw, 1, wxEXPAND, 5);
 
@@ -555,8 +600,7 @@ bool Camera_ZWO::Connect(const wxString& camId)
                 long bw = pConfig->Profile.GetInt("/camera/ZWO/BandWidth", (int) caps.MinValue);
                 bw = wxMax((long) caps.MinValue, wxMin(bw, (long) caps.MaxValue));
 
-                Debug.Write(wxString::Format("ZWO: bandwidth = %ld (range %ld .. %ld)\n", bw, caps.MinValue,
-                                             caps.MaxValue));
+                Debug.Write(wxString::Format("ZWO: bandwidth = %ld (range %ld .. %ld)\n", bw, caps.MinValue, caps.MaxValue));
                 ASISetControlValue(m_cameraId, ASI_BANDWIDTHOVERLOAD, bw, ASI_FALSE);
                 break;
             }
@@ -565,8 +609,8 @@ bool Camera_ZWO::Connect(const wxString& camId)
                 // 0 = normal, 1 = high speed readout (usually a lower ADC depth).
                 // Guiding output is 8-bit, so the faster readout is normally free.
                 bool const wantFast = pConfig->Profile.GetBoolean("/camera/ZWO/HighSpeedMode", true);
-                Debug.Write(wxString::Format("ZWO: high speed mode = %ld -> %d (writable %d)\n",
-                                             caps.DefaultValue, wantFast ? 1 : 0, caps.IsWritable));
+                Debug.Write(wxString::Format("ZWO: high speed mode = %ld -> %d (writable %d)\n", caps.DefaultValue,
+                                             wantFast ? 1 : 0, caps.IsWritable));
                 if (caps.IsWritable)
                     ASISetControlValue(m_cameraId, ASI_HIGH_SPEED_MODE, wantFast ? 1 : 0, ASI_FALSE);
                 break;
@@ -628,14 +672,13 @@ bool Camera_ZWO::Connect(const wxString& camId)
     return false;
 }
 
-void Camera_ZWO::StopCapture()
+bool Camera_ZWO::StopCapture()
 {
-    if (m_capturing)
-    {
-        Debug.Write("ZWO: stopcapture\n");
-        ASIStopVideoCapture(m_cameraId);
-        m_capturing = false;
-    }
+    ZwoCaptureApi api = { m_cameraId };
+    zwo_capture::Result result = zwo_capture::StopVideo(api, m_capturing);
+    if (!result.Ok())
+        LogCaptureError(result);
+    return !result.Ok();
 }
 
 bool Camera_ZWO::StopExposure()
@@ -649,6 +692,7 @@ bool Camera_ZWO::Disconnect()
 {
     StopCapture();
     ASICloseCamera(m_cameraId);
+    m_capturing = false;
 
     Connected = false;
 
@@ -867,21 +911,16 @@ bool Camera_ZWO::Capture(usImage& img, const CaptureParams& captureParams)
         limitFramePos = limit_frame.GetLeftTop() - frame.GetLeftTop();
     }
 
-    long exposureUS = duration * 1000;
-    ASI_BOOL tmp;
-    long cur_exp;
-    if (ASIGetControlValue(m_cameraId, ASI_EXPOSURE, &cur_exp, &tmp) == ASI_SUCCESS && cur_exp != exposureUS)
+    ZwoCaptureApi api = { m_cameraId };
+    long exposureUS = duration * 1000L;
+    long new_gain = HasGainControl ? cam_gain(m_minGain, m_maxGain, GuideCameraGain) : 0;
+    zwo_capture::Result configured =
+        zwo_capture::Configure(api, m_mode == CM_VIDEO, m_capturing, exposureUS, HasGainControl, new_gain);
+    if (!configured.Ok())
     {
-        Debug.Write(wxString::Format("ZWO: set CONTROL_EXPOSURE %d\n", exposureUS));
-        ASISetControlValue(m_cameraId, ASI_EXPOSURE, exposureUS, ASI_FALSE);
-    }
-
-    long new_gain = cam_gain(m_minGain, m_maxGain, GuideCameraGain);
-    long cur_gain;
-    if (ASIGetControlValue(m_cameraId, ASI_GAIN, &cur_gain, &tmp) == ASI_SUCCESS && new_gain != cur_gain)
-    {
-        Debug.Write(wxString::Format("ZWO: set CONTROL_GAIN %d%% %d\n", GuideCameraGain, new_gain));
-        ASISetControlValue(m_cameraId, ASI_GAIN, new_gain, ASI_FALSE);
+        LogCaptureError(configured);
+        DisconnectWithAlert(_("Failed to configure ZWO camera. See the debug log for details."), NO_RECONNECT);
+        return true;
     }
 
     bool size_change = frame.GetSize() != m_frame.GetSize();
@@ -896,7 +935,11 @@ bool Camera_ZWO::Capture(usImage& img, const CaptureParams& captureParams)
 
     if (size_change || binning_change)
     {
-        StopCapture();
+        if (StopCapture())
+        {
+            DisconnectWithAlert(_("Failed to stop ZWO video capture. See the debug log for details."), NO_RECONNECT);
+            return true;
+        }
 
         ASI_ERROR_CODE status = ASISetROIFormat(m_cameraId, frame.GetWidth(), frame.GetHeight(), HwBinning,
                                                 m_bpp == 8 ? ASI_IMG_RAW8 : ASI_IMG_RAW16);
@@ -930,11 +973,12 @@ bool Camera_ZWO::Capture(usImage& img, const CaptureParams& captureParams)
 
         flush_buffered_image(m_cameraId, m_buffer, m_buffer_size);
 
-        if (!m_capturing)
+        zwo_capture::Result started = zwo_capture::StartVideo(api, m_capturing);
+        if (!started.Ok())
         {
-            Debug.Write("ZWO: startcapture\n");
-            ASIStartVideoCapture(m_cameraId);
-            m_capturing = true;
+            LogCaptureError(started);
+            DisconnectWithAlert(_("Failed to start ZWO video capture. See the debug log for details."), NO_RECONNECT);
+            return true;
         }
 
         CameraWatchdog watchdog(duration, duration + GetTimeoutMs() + 10000); // total timeout is 2 * duration + 15s (typically)
@@ -946,7 +990,8 @@ bool Camera_ZWO::Capture(usImage& img, const CaptureParams& captureParams)
                 break;
             if (WorkerThread::InterruptRequested())
             {
-                StopCapture();
+                if (StopCapture())
+                    DisconnectWithAlert(_("Failed to stop ZWO video capture. See the debug log for details."), NO_RECONNECT);
                 return true;
             }
             if (watchdog.Expired())

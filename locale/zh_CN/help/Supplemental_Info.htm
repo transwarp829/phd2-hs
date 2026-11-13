@@ -1,0 +1,181 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html lang="zh-CN"><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><title>补充说明</title></head>
+<body>
+<h2>补充说明</h2><a href="#Astronomical_seeing">天文视宁度</a><br><a href="#Binning_usage">像素合并的使用</a>
+<br><a href="#Dithering_Ops">抖动操作</a><br><a href="#Common_mount_problems">常见赤道仪问题</a><br><a href="#Declination-Uni-directional_guiding">单方向赤纬导星</a><br><a href="#Variable_delay_guiding">可变延迟导星</a><br><a href="#Differential_flexure">差异挠曲</a><br><a href="#AO_Devices">自适应光学设备</a><br>
+<a href="#Logging_and_Debug_Output">日志与调试输出</a><br>
+<a href="Tools.htm#Polar_alignment_tools"><span style="text-decoration: underline;"></span></a><a href="#Managing_Equipment_Profiles">设备配置</a><br>
+<a href="#Ask_for_coordinates_aux_mount">“询问坐标”辅助赤道仪</a><br>
+<a href="#Advanced_Settings_for_the_Simulators">模拟器参数</a><br>
+<a href="#Multiple_Executions">运行多个程序实例</a><br>
+<a href="#Keyboard_Shortcuts">键盘快捷键</a><br>
+<a href="#Software_Update">软件更新</a><br>
+<br><h3><a name="Astronomical_seeing"></a>天文视宁度与导星</h3><o:p></o:p><p class="MsoNormal">要深入了解天文摄影和导星，就必须认识天文视宁度。<span style="">&nbsp;
+</span>这个话题很复杂，本节只介绍最基本的内容。<span style="">&nbsp; </span>“视宁度”描述我们通过望远镜观察或拍摄恒星时，星点位置的抖动以及亮度的突然变化。<span style="">&nbsp; </span>肉眼无法分辨星点如此细小的位置变化，因此看到的是星光“闪烁”。<span style="">&nbsp;</span>这是大气湍流的结果，由地球大气不同高度上的热气团运动造成。光线经过每个气团时都会折射，因此看一颗星，实际上是在透过一整柱如同无数小透镜的空气观察。<span style="">&nbsp; </span>每个气团的折射取决于温度，而各气团通常具有不同温度。<span style="">&nbsp; </span>大气又在不断变化，这些气团以不同速度移动，不断进入和离开视线中的空气柱。<span style="">&nbsp; </span>尤其在长焦距条件下，即使赤道仪工作正常，大气视宁度仍是所见星点运动的最大来源，而且无法通过常规导星消除。<span style="">&nbsp; </span>气团运动使星点位置每秒变化数十至数千次，业余级设备即使配备自适应光学，也无法足够快地响应。专业天文台使用昂贵的测量装置、人造参考星，以及能高速改变镜面形状并移动图像的机构，在很大程度上进行补偿。对这些天文台而言，大部分扰动来自高层大气，视宁度模型和多数预报也主要针对这些层。业余用户，尤其在城区或后院摄影时，还会受到望远镜附近热源的影响。硬质地面或邻近屋顶的热对流会产生较低频率的“沸腾”现象，降低导星和摄影效果。近地面热量还会在镜筒中形成气流和不均匀的热空气层，看起来也像低频视宁度扰动。应尽可能避开或减轻这些情况；在白天高温的地点，通常需要日落后数小时，设备温度才能达到平衡。<o:p></o:p></p>
+
+
+
+<p class="MsoNormal"><o:p></o:p>从导星的角度看，我们始终在对视宁度进行“欠采样”。<span style="">&nbsp; </span>完成曝光、下载图像、计算星点位置并发送导星指令时，传感器上的星点位置很可能已经变化数百次。<span style="">曝光越短，这些测量误差反而可能越大，这称为“混叠”。观看电视或电影中快速旋转的物体，例如汽车车轮时，就会遇到混叠。多年来你可能已习惯忽略它，但追车画面中的车轮真的在倒转吗？产生这种现象，是因为拍摄设备的采样频率，例如每秒 60 帧，不足以准确测量旋转物体的运动。回到自动导星，</span>我们处理的总是已过时的星点位置信息，而且这还没有算上赤道仪执行指令时自身的精度不足。<span style="">&nbsp; </span>那些我们<i style="">能够</i>修正的运动，如漂移、周期误差、大气折射和机械变形等，都隐藏在视宁度形成的大量噪声之中。<span style="">PHD2 导星算法的重要目标之一，就是识别并响应可修正的跟踪误差，同时忽略无法修正的视宁度干扰。</span>选择合适的导星曝光时间，可以让这项任务更容易。<o:p></o:p></p>
+
+<h3><span style="font-size: 12pt;"><big>视宁度与曝光时间</big><o:p></o:p></span></h3>
+
+<p class="MsoNormal">导星相机看到的、由视宁度造成的高频星点运动，强烈受曝光时间长短影响。<span style="">&nbsp; </span>下图展示：曝光时间增加后，测得的星点运动范围会怎样缩小：<o:p></o:p></p>
+<img style="width: 717px; height: 447px;" alt="" src="Supplemental_Graph_Seeing.png"><br>
+
+<p class="MsoNormal">本质上，传感器是在对不断变化的星点光斑取平均，使结果更平滑。<span style="">&nbsp; </span>欠采样造成的测量不确定性仍然存在，但较长曝光使 PHD2 更容易分离并识别真正能通过导星改善的低频误差。<span style="">&nbsp; </span>当然，曝光时间也有实际的上限。<span style="">&nbsp;
+</span>通常，这取决于赤道仪在无需修正时能够独立保持跟踪多久。<span style="">&nbsp;
+</span>周期误差、漂移、挠曲及其他来源的小误差，必须在大到足以破坏照片之前得到修正。<span style="">&nbsp; </span>合适的平衡点始终取决于视宁度和设备质量。<span style="">&nbsp; </span>一般建议 PHD2 从约 2 秒曝光开始。只有赤道仪确实需要，而且正在使用多星导星时，才尝试更短曝光；即便如此，也建议至少 0.5 秒。</p><p class="MsoNormal"><o:p></o:p></p>
+
+<h3><span style="font-weight: bold;"><a name="Binning_usage"></a>像素合并的使用</span></h3>PHD2 支持的许多导星相机具备硬件像素合并功能。长焦距导星或使用小像元相机时，它可能很有帮助。这些情况下往往只能使用较暗的导星星点，而且图像可能严重过采样。过采样并无实际益处，暗星光斑分散到过多小像素上，还会导致信噪比较低。合并像素可以减小读出噪声的影响，提高信噪比；如果原本已过采样，也不会降低星点定位精度。选择大于 1 的合并因子会产生以下效果：<br>
+<ol>
+<li>星点信噪比提高，更容易从背景噪声中检测出来。只能使用暗星时尤其有用，例如信噪比低于约 10 的情况。</li>
+<li>相机下载数据量缩小为原来的合并因子平方分之一。如果相机占用较多 USB 资源，即使不合并时星点亮度和信噪比已足够，这仍可能有帮助。选星之后使用子帧，也能达到类似的数据量削减效果。</li>
+<li>导星图像的线性分辨率按合并因子降低，也就是每像素对应的角秒数增大。如果原始比例尺小于 1 角秒/像素，通常不是问题；若原始比例尺超过 2.5 角秒/像素，则可能降低导星表现。结果还取决于主摄影系统的成像比例尺，因此可能需要实验。</li>
+</ol>每种硬件合并等级都需要自己的暗场和坏像素图，不能互换，也不能自动转换。如果需要在不同合并设置之间切换，应为每个合并值创建独立配置，并分别建立暗场库和坏像素图。切换时只需选取对应配置，就有相应校准文件可用。要检查相机是否正确进行了合并，可以打开<a href="Visualization.htm#Stats_Display">统计</a>窗口，确认画幅尺寸及当前相机硬件合并设置。即使已经确定要更换合并等级，也应通过新建配置向导创建配置，这会自动调整所有依赖成像比例尺的导星参数。从导星角度看，更改像素合并本质上相当于换了一台相机。<br>
+<h3><a name="Dithering_Ops"></a>抖动（Dithering）</h3>
+
+<p class="MsoNormal" style="line-height: normal;"><span style="">为减轻固定图样噪声和热像素，摄影者常在两次曝光之间让望远镜移动一点点，这称为抖动。抖动始终由摄影程序控制，因为只有它能在改变指向期间暂停主相机曝光。PHD2 的职责只是发送实现所请求位移的导星指令，按要求执行。它通过两步完成这次微小指向变化：<o:p></o:p></span></p>
+
+<p class="MsoNormal" style="line-height: normal;"><span style="">1.</span><span style="">按照</span><span style="">摄影程序请求的位移量，更改主导星星点的锁定位置。<o:p></o:p></span></p>
+
+<p class="MsoNormal" style="line-height: normal;"><span style="">2.</span><span style="">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="">使用正常导星流程，将主导星星点移到新的锁定位置。<o:p></o:p></span></p>
+
+<p class="MsoNormal" style="line-height: normal;"><span style="">抖动幅度至少间接地由摄影程序控制。<span style="">&nbsp; </span>程序可能允许直接指定最大抖动幅度，单位通常是像素。<span style="">&nbsp; </span>此时 PHD2 将其理解为从零到该上限的随机取值范围。<span style="">&nbsp; </span>随机化的目的</span><span style="">是避免抖动形成简单的来回重复模式，或把画面移回以前的位置。<span style="">&nbsp; </span></span>某些调用 PHD2 抖动的程序不允许直接输入最大幅度，只提供小、中、大等选项，对应预设最大值。因此，PHD2 在“高级设置”的“全局”页提供“抖动倍率（Dither scale）”。它是一个乘数，用来调整可用的抖动幅度范围：1 不改变预设值，10 则放大为 10 倍。如果程序允许直接设置最大幅度，例如 PHD_Dither，应把倍率保持为 1.0。否则，如果对小、中、大某一选项产生的总体范围不满意，可通过倍率调整。<span style=""><o:p></o:p></span></p>
+
+<p class="MsoNormal" style="line-height: normal;"><span style="">由摄影程序决定导星何时稳定，以及何时开始下一次主相机曝光。为方便摄影软件开发者，PHD2 提供额外的测量信息，反映稳定等待的进展。摄影程序是否使用这些信息完全自愿。要利用它，摄影程序需要指定什么程度的稳定可视为抖动完成，共有三个参数：<o:p></o:p></span></p>
+
+<p class="MsoNormal" style="line-height: normal;"><span style="">1.</span><span style="">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="">允许的最大星点位置误差，称为位置容差，记为<b>PT</b><o:p></o:p></span></p>
+
+<p class="MsoNormal" style="line-height: normal;"><span style="">2.</span><span style="">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="">星点位置误差必须连续低于容差的时长，称为评估时间，记为<b>ET</b><o:p></o:p></span></p>
+
+<p class="MsoNormal" style="line-height: normal;"><span style="">3.</span><span style="">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="">允许等待的最长时间；达到后即终止评估，无论是否稳定都结束本次抖动等待，称为超时时间，记为<b>TO</b><o:p></o:p></span></p>
+
+<p class="MsoNormal" style="line-height: normal;"><span style="">换句话说，导星误差不大于<b>PT</b>并连续保持<b>ET</b>秒，就认为稳定等待完成；如果一直达不到，则在等待<b>TO</b>秒后结束。评估完成时，PHD2 会通知摄影程序。这只是 PHD2 的额外辅助功能，从锁定位置改变开始，正常导星就一直在进行。<o:p></o:p></span></p>
+
+<p class="MsoNormal" style="line-height: normal;"><span style="">当然，这些参数——<b>PT</b>、<b>ET</b>和<b>TO</b>——最终需要由你合理选择。摄影程序可能不在界面中显示全部参数，也可能使用不同名称。如果赤道仪性能一般、抖动幅度又大，就应预计需要较长时间恢复稳定。如果<b>PT</b>过大，或<b>ET</b>过小，也就是条件过于宽松，摄影程序可能过早开始下一次曝光，导致星点拖线。如果<b>TO</b>过短，也会发生同样的问题。反之，如果<b>PT</b>过小，或<b>ET</b>过长，也就是条件过于苛刻，每次抖动都可能等待完整的<b>TO</b>秒后以稳定失败结束，因为要求超出了赤道仪能力。合理方法是查看过去的表现，了解在典型视宁度和所需抖动幅度下，赤道仪的实际响应。如果赤纬回差较大，还要测量赤纬指令换向后需要多久才稳定。<b>ET</b>和<b>PT</b>应基于设备平时能达到的导星表现，并留一点余量，避免浪费时间。稳定等待偶尔超时很常见，通常不会造成问题，但应使用 LogViewer 检查导星日志，确认主相机没有在 PHD2 仍执行大幅修正时开始曝光。<o:p></o:p></span></p>
+
+<p class="MsoNormal" style="line-height: normal;"><span style="">PHD2 还支持不同的赤经、赤纬抖动方式。<span style="">默认情况下，两轴分别按前述方式移动不同的随机距离。</span>选择“螺旋模式（Spiral mode）”后，导星星点逐步形成围绕原始锁定位置的螺旋轨迹。<span style="">&nbsp; </span>这会自动减少赤纬换向次数，适合回差较大的赤道仪。此模式不随机化，每次抖动幅度就是摄影程序指定的大小。<span style="">&nbsp; </span>也可以选择“仅赤经（RA-only）”，完全避免赤纬换向；但如果主相机固定图样噪声较重，这可能不是好选择。确定抖动幅度时，必须同时考虑导星系统与主摄影系统的成像比例尺。对于 CMOS 主相机，常见建议是较大的抖动，例如 10～20 像素；这里指的是主相机传感器上的像素，不是导星相机。因此，需要计算导星相机应移动多少像素，才能在主相机上得到所需位移。导星相机所需的像素数往往更少。<o:p></o:p></span></p>
+
+<p class="MsoNormal" style="line-height: normal;">如果赤道仪赤纬回差很大，你可能只向北或只向南导星。在这种模式下收到赤纬抖动指令时，PHD2 会临时允许双向赤纬导星，直到抖动和稳定等待结束，再恢复原来的单方向模式。如果不希望这样，应将抖动限制为“仅赤经”。所有 PHD2 抖动控制都在“高级设置”的“全局”页。</p><h3><a name="Common_mount_problems"></a>赤道仪常见机械问题<o:p></o:p></h3>
+
+<h3>赤经周期误差（PE）<o:p></o:p></h3>
+
+<p class="MsoNormal">周期误差通常由赤经传动系统各部件的微小加工误差造成。<span style="">&nbsp; </span>下图展示典型传动系统的一部分：</p><p class="MsoNormal"><img style="width: 489px; height: 313px;" alt="" src="Supplement_RA_Gears.png"></p><p class="MsoNormal">图片来源：Mathis Instruments</p><p class="MsoNormal">
+
+</p><p class="MsoNormal">高精度蜗杆，箭头 1，驱动大得多的蜗轮，箭头 2。<span style="">&nbsp; </span>蜗轮固定在赤经轴上。按恒星时跟踪时，蜗轮每个恒星日，即 23.934 小时，旋转一周。<span style="">&nbsp; </span>要让跟踪完全精确，必须同时满足以下条件：<o:p></o:p></p>
+
+<p style="margin-left: 40px;" class="MsoNormal">蜗杆上每段螺纹的螺距和间距完全相同。<o:p></o:p></p>
+
+<p style="margin-left: 40px;" class="MsoNormal">蜗杆与安装板刚性固定，齿轮及支座没有挠曲或移动。<o:p></o:p></p>
+
+<p style="margin-left: 40px;" class="MsoNormal">蜗轮每个齿的形状和间距完全相同。<o:p></o:p></p>
+
+<p style="margin-left: 40px;" class="MsoNormal">蜗轮绝对正圆，而且中心与旋转轴完全重合。<o:p></o:p></p>
+
+<p class="MsoNormal">这些只是必要条件的一部分，但显然，大多数业余赤道仪很难具备如此精度。<span style="">&nbsp; </span>蜗杆加工通常最具挑战，因此跟踪误差往往首先来自这里。<span style="">&nbsp; </span>恒星时跟踪时，蜗杆以恒定速率旋转，转一周的时间称为蜗杆周期。不同赤道仪的周期不同，通常在 4～10 分钟之间。<span style="">&nbsp;
+</span>某段蜗杆螺纹的加工误差，每个蜗杆周期都会表现一次。实际上，多段螺纹都可能存在误差，各自在每个周期中贡献一部分跟踪误差。<span style="">&nbsp; </span>将一个蜗杆周期内的跟踪误差绘成图，通常会得到大致呈正弦形、但斜率及峰谷有所变化的曲线，这就是周期误差。<span style="">&nbsp;</span>下面是一个例子：</p><p class="MsoNormal"><img style="width: 765px; height: 484px;" alt="" src="Supplement_Example_PE.png"><o:p></o:p></p>
+<p class="MsoNormal">
+
+</p><p class="MsoNormal">请注意，视宁度造成的高频运动不属于机械周期误差。<o:p></o:p></p>
+
+<p class="MsoNormal">赤经系统还有其他齿轮，通常是一组位于电机和蜗杆之间的减速齿轮。<span style="">&nbsp; </span>它们把电机的原始转速转换为较慢的蜗杆转速，同时产生驱动蜗杆所需的扭矩。<span style="">&nbsp; </span>每个部件都有自身加工误差，共同形成赤道仪的累计跟踪误差。<span style="">&nbsp; </span>其中许多部件引入的误差周期，比蜗杆周期更短。<span style="">&nbsp; </span>某些赤道仪使用皮带，以避开这些上游齿轮的部分误差，但皮带也可能引入新的问题，如张力不正确、在轮轴上横向移动等。<span style="">&nbsp; </span><o:p></o:p></p>
+
+<h3><a name="RA_periodic_error"></a>赤经周期误差修正<o:p></o:p></h3>
+
+<p class="MsoNormal">如果实现正确，赤道仪固件中的周期误差修正（PEC）有助于自动导星。<span style="">&nbsp; </span>遗憾的是，并非所有实现都如此。<span style="">&nbsp; </span>正确的 PEC 会在部分跟踪误差出现在导星图像之前就进行处理。<span style="">这些修正</span>依据赤道仪周期误差模型提前预测，与常规自动导星的事后响应不同。<span style="">&nbsp; </span>因此，PHD2 为保持赤经指向所需完成的修正更少。<span style="">&nbsp; </span>即使赤道仪的 PEC 实现良好，也必须使用专门程序，仔细生成高质量修正曲线。<span style="">&nbsp;
+</span>测量时，程序必须滤除视宁度造成的星点运动，将多个蜗杆周期的样本合成为平滑曲线。它还必须了解蜗杆周期与传动系统中的各阶谐波，只修正谐波性的误差，即频率为蜗杆频率整数倍的误差。<span style="">如果 PEC 曲线生成不当，赤经跟踪甚至可能比完全不用 PEC 更差。</span></p><p class="MsoNormal">如果赤道仪没有 PEC，或实现不佳，可以使用 PHD2 的 PPEC 导星算法。<span style="font-size: 11pt; line-height: 107%; font-family: &quot;Calibri&quot;,sans-serif;"></span><a href="Guide_algorithms.htm#Predictive_PEC">PHD2 预测性周期误差修正</a><span style=""> </span><o:p></o:p></p>
+
+<h3><o:p></o:p><a name="Dec_backlash"></a>赤纬回差与静摩擦卡滞</h3><p class="MsoNormal">当转轴运动方向反转时，可能出现回差：电机虽然已经转动，望远镜却没有立即向反方向移动。常见原因是传动齿轮啮合较松。常规自动导星中，赤经传动始终向西跟踪天空，不会因为导星而真正反转，因此这个问题通常不影响赤经。赤纬则不同：它在大部分时间静止，只有收到向北或向南指令时才短暂转动，所以回差很常见。下面用简单示意图说明原因：</p><p class="MsoNormal"><img style="width: 336px; height: 219px;" alt="" src="Supplement_Backlash.png"></p><p class="MsoNormal">图中是两个直齿轮，但原理同样适用于蜗杆与蜗轮。假设下方齿轮是<span style="font-style: italic;">主动</span>齿轮，当前逆时针旋转。它的齿面与上方<span style="font-style: italic;">从动</span>齿轮接触，使后者顺时针转动。但箭头指出，主动齿轮齿的后侧表面没有接触对应的从动齿面，中间存在小间隙。因此主动齿轮反转后，要经过短暂时间重新完全啮合，从动齿轮才开始反向转动。这种“换向延迟”就是单纯回差造成的。通常必须保留一定间隙，以避免传动卡死，并给润滑剂和热胀冷缩留出空间。啮合过紧时，转轴可能出现静摩擦卡滞（stiction），无法顺畅移动，或很难从静止状态启动。赤纬静摩擦可能表现为：开始时出现类似回差的换向延迟，而一旦终于启动，又产生很大的过冲。除误开赤道仪软件中的回差补偿外，静摩擦卡滞是赤纬导星振荡最常见的原因。</p><p class="MsoNormal">导星助手会强制赤纬轴换向，测量其响应。它只能测量“换向延迟”，即改变方向并达到预期转速所需的时间；并不总能区分根因是回差、静摩擦，还是两者兼有，但生成的图形常能提供线索。即使在正常导星、没有使用导星助手的大脉冲时，也可能观察到相同现象。如果换向延迟很大，例如超过 3 秒，最好先调整赤纬传动系统。如果小于这个值，PHD2 的赤纬回差补偿通常能够较好处理。请注意，延迟与赤道仪导星速率成反比：导星速率越高，换向延迟越短。这也是建议至少使用 0.5 倍恒星时导星速率的原因之一。</p><p class="MsoNormal">同一赤道仪的换向延迟通常不是固定值，而会随望远镜指向及赤纬平衡状态变化。随着使用年限增加，齿轮逐渐磨损；赤纬齿轮磨损最严重的位置，往往是摄影时最常用的区域。对于北半球观测者，通常是赤纬 0～40°。尤其在老旧赤道仪上，这些位置的延迟可能与天极附近很不一样。因此，PHD2 的自适应回差补偿通常优于写入赤道仪控制器的固定补偿量。</p>
+<h3><a name="Declination-Uni-directional_guiding"></a><span style="font-weight: bold;">单方向赤纬导星</span></h3>如前所述，有些赤道仪赤纬换向延迟过大，不适合南北双向导星。可将 PHD2 设置为只向一个方向修正，也就是单方向赤纬导星。这样可行，是因为赤纬导星主要只需修正极轴不准和少量机械挠曲造成的缓慢漂移。有时甚至可以有意让极轴略微偏离，以便清楚判断漂移方向，并降低视宁度干扰单方向导星的可能性。适度的极轴误差通常不会降低导星表现，但如果使用较大传感器、拍摄天极附近目标，可能引起场旋。开始时可把极轴误差控制在 5～10 角分以内，再设置单方向导星。之后可检查场旋：用主相机在预计拍摄的最高赤纬处，例如北天赤纬 +70°，拍一张测试图。如果没有场旋，就可保持当前对极轴精度。只要存在极轴误差，赤纬修正方向就会在天空某处改变；严格说有两处，但通常一处在地平线以下。换向位置取决于方位误差与高度误差的相对大小。如果主要误差来自高度，换向点应接近天球子午线，大约与需要中天翻转的时间相近。<br>
+<br>设置单方向导星时，可按以下步骤：<br>
+<ol>
+<li>转到有合适导星星点的视场，运行导星助手数分钟。观察曲线，判断星点是向北还是向南漂移，然后把赤纬导星模式设为向<span style="font-weight: bold;">相反</span>方向修正。例如星点向北漂移，就选择“南（South）”。</li>
+<li>可以尝试为赤纬选择 LowPass2 算法，并从较低修正强度开始，例如 50%。强度过高可能把星点推到锁定位置的另一侧，之后只能等缓慢漂移把它带回来。为减少这种过冲，数次小修正通常优于一次大修正。</li>
+<li>观察导星曲线，确认修正方向正确，星点没有持续离开目标。经过数分钟或数小时，可能发现漂移逐渐减小，说明正在接近赤纬漂移换向点，应准备相应改变导星方向。</li>
+<li>如果使用抖动，可以考虑设为“仅赤经”，避免干扰赤纬导星。</li>
+</ol>如果通过 PHD2 服务器接口进行抖动，单方向赤纬导星会暂时切换为“自动”，以完成抖动。这可能延长稳定等待，但允许执行固定图样噪声相机所需的双轴抖动。稳定后，赤纬模式会恢复原设置。只有服务器接口具有这种行为；通过“手动导星”工具进行抖动，不会临时取消单方向限制。<h3><a name="Variable_delay_guiding"></a>高精度赤道仪与可变延迟导星</h3>
+
+<p class="xxxmsonormal">具有高精度绝对编码器和详细指向模型的赤道仪，往往能在完全不导星的情况下摄影。<span style="">&nbsp; </span>但无需任何修正的持续时间仍有上限。<span style="">&nbsp; </span>此时的目标是提供一种备用导星机制，既不与编码器和指向模型的修正冲突，又能改善总体结果。<span style="">&nbsp; </span>建议采用以下策略：<o:p></o:p></p>
+
+<p class="xxxmsolistparagraph" style="text-indent: -0.25in; margin-left: 40px;">1.<span style="font-size: 7pt; font-family: &quot;Times New Roman&quot;,serif;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span>尽可能降低导星指令频率。这类赤道仪内部可能已十分忙碌，不断接收编码器和精细指向模型的修正，而 ASCOM 程序看不到这些动作。较低导星频率可减少外部指令干扰内部控制、造成不稳定的可能性。<o:p></o:p></p>
+
+<p class="xxxmsolistparagraph" style="text-indent: -0.25in; margin-left: 40px;">2.<span style="font-size: 7pt; font-family: &quot;Times New Roman&quot;,serif;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span>尤其注意不要追逐视宁度。最简单的方法是使用中等或较长曝光，并给最小移动量留出较大余量。<o:p></o:p></p>
+
+
+
+<p class="xxxmsonormal">在较早的 PHD2 版本中，可以使用 4～8 秒曝光，再加非零的“帧间延迟（Time lapse）”近似实现。帧间延迟是在上一条导星指令完成后，到下一次相机曝光开始前插入固定等待。缺点是循环曝光、选星、标定、抖动和稳定等待等非稳态操作，也会被无谓拖慢。“可变延迟（Variable delay）”允许设置两种不同延迟，解决这个问题：<o:p></o:p></p>
+
+<p class="xxxmsolistparagraph" style="text-indent: -0.25in; margin-left: 40px;">1.<span style="font-size: 7pt; font-family: &quot;Times New Roman&quot;,serif;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span>“短延迟”用于稳态导星以外的所有活动。可以为零，但部分赤道仪需要非零值，让编码器有时间完成修正。通常没有必要超过 1 秒。<o:p></o:p></p>
+
+<p class="xxxmsolistparagraph" style="text-indent: -0.25in; margin-left: 40px;">2.<span style="font-size: 7pt; font-family: &quot;Times New Roman&quot;,serif;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span>“长延迟”用于长曝光摄影时通常进行的逐帧稳态导星。它与相机曝光时间相加，共同决定导星节奏。<o:p></o:p></p>
+
+
+
+<p class="xxxmsonormal">例如，相机曝光 4 秒、短延迟 1 秒、长延迟 4 秒。4 秒曝光可以较好抑制视宁度影响，而 4+4 秒使大部分摄影过程保持 8 秒一次的导星节奏。同时，抖动稳定期间则使用 4+1 秒的较短曝光间隔，缩短等待。</p><h3><a name="Differential_flexure"></a>差异挠曲<o:p></o:p></h3>
+
+<p class="MsoNormal">任何望远镜和相机组合，在跟踪天空目标时都会以不同方式弯曲和下垂，这是重力及物理规律的自然结果。<span style="">&nbsp; </span>每个部件的具体表现又取决于自身质量，以及与相邻部件的连接方式。<span style="">&nbsp;</span>尤其是大口径望远镜和重型相机，挠曲量可能很显著，因为导星修正本身只有几微米量级。<span style="">&nbsp; </span>我们通常不熟悉这么小的尺寸，可以这样理解：人类头发直径约 50 微米，大约是多数导星修正量的 10 倍。<o:p></o:p></p>
+
+<p class="MsoNormal">主镜之外再使用独立导星镜时，两套系统会各自独立弯曲和位移，这称为差异挠曲。<span style="">&nbsp; </span>PHD2 通过独立导星镜只能看到并修正导星镜和导星相机的运动，看不到主镜及主相机的相对位移。<span style="">&nbsp;</span>因此常出现令人困惑的情况：导星数据很好，主相机拍到的星点却拉长了。<span style="">&nbsp; </span><o:p></o:p></p>
+
+<p class="MsoNormal">双镜系统中<b>始终</b>存在一定差异挠曲，问题只是有多大，以及是否足以损害照片。<span style="">&nbsp;
+</span>主镜焦距达到或超过 1800 毫米时，差异挠曲通常会成为问题，除非主相机曝光保持较短。<span style="">&nbsp; </span>无法事先准确预测，因为可能移动的机械连接点太多：施密特-卡塞格林望远镜的可动主镜、相机和调焦座之间的各个接头、调焦座本身、系统中的手拧螺丝、导星镜抱箍结构等。<span style="">&nbsp;&nbsp;</span>常见解决办法是放弃双镜结构，在主镜上使用离轴导星器（OAG）。<span style="">&nbsp; </span>这样 PHD2 就能看到所有会影响主相机图像的运动，无论来自机械因素还是其他原因。<span style="">&nbsp;</span>早期离轴导星器的视场很小，不容易找到合适星点，因此使用较困难。<span style="">&nbsp; </span>随着新一代导星相机具备较大且高灵敏度的传感器，多数这类困难已明显减少。<o:p></o:p></p>
+
+<p class="MsoNormal">如果经常出现长条星点，但赤经和赤纬导星统计都相当正常且接近，就应怀疑差异挠曲。<span style="">&nbsp;</span>通常可以用简单测试验证。<span style="">&nbsp; </span>保持导星，用主相机找到仍能拍出可接受圆星点的最长曝光时间。<span style="">&nbsp; </span>然后按这个时长连续拍摄约 10～20 张，用能够查看图像序列的软件，按拍摄顺序快速切换闪看。<span style="">&nbsp; </span>通常会看到每张图中的恒星相对上一张都有一致偏移，循环查看时，星点像是在朝某个方向“行进”。<span style="">&nbsp;</span>也可以不对齐就直接叠加所有图像，从而显现星点拉长。</p><h3><a name="AO_Devices"></a>自适应/主动光学设备</h3><p class="MsoNormal">一般而言，业余级自适应或主动光学（AO）只能处理造成导星不佳的部分问题。它通常能掩盖或改善赤道仪性能不足，因为大多数修正只需要移动小型倾斜光学元件，而不是几十千克的望远镜设备。赤道仪基本只需维持恒星时跟踪，很少参与其他动作。回差、静摩擦和周期误差大多可被 AO 掩盖。又因为 AO 本质上是离轴导星结构，也能消除差异挠曲。这些明显优点解释了许多资深摄影者为什么使用 AO。<br><br>AO 通常无法消除视宁度引起的星点运动。高层大气造成的变化频率至少每秒数百次，实际很难找到足够明亮、可按如此高速测量的参考星。如果强行提高 AO 速度，会遇到两个问题：第一，可用星点的信噪比可能过低，定位精度随之降低；第二，对视宁度位移产生欠采样。后者会造成混叠，产生错误修正，甚至使情况变差。因此，AO 用户仍建议使用不短于 0.5 秒的曝光，避免追逐视宁度。AO 的实际目标，是让赤道仪的跟踪精度和响应看起来优于本来的机械性能。如果摄影效果并不受赤道仪性能限制，AO 很可能收益有限。<br><br>AO 导星有时需要同时向 AO 和赤道仪发送指令。只要修正没有超出倾斜元件的物理范围，指令就只发给 AO；接近行程极限时，再向赤道仪发送回中推动指令（bump），把主导星星点带回倾斜元件的中心附近。这可能用于补偿极轴漂移、线缆拉扯等外因造成的大偏移，或较大抖动。如何混合这两类指令，见本手册“高级设置/AO 参数”。<a href="Advanced_settings.htm#Other_Devices_Tab">AO 参数</a><br><o:p></o:p></p>
+
+
+<h3><a name="Logging_and_Debug_Output"></a>日志与调试输出</h3>
+<span style="font-style: italic;">PHD2</span>会自动生成两类日志：调试日志和导星日志，各有用途。导星日志采用便于人阅读和外部程序解析的格式。<span style="">&nbsp; </span>例如 PHDLogView，虽然不随 PHD2 一起发布，但可以利用导星日志生成各种曲线和汇总统计。<span style="">&nbsp;&nbsp;
+</span>日志也可以轻松导入 Excel 或其他程序，进行分析和绘图。<span style="">&nbsp;
+</span>导入 Excel 时，选择逗号作为列分隔符即可。调试日志完整记录<span style="font-style: italic;">PHD2</span>会话中的全部操作，因此有助于定位问题。它采用人可读的文字格式，虽然较冗长，但仍能查看发生了什么。报告软件问题时，几乎肯定会被要求提供这两类日志；如果完全没有日志，通常很难得到帮助。请注意，只要运行过 PHD2，无论期间做了什么或什么都没做，都会生成日志，因此你<span style="font-weight: bold;">一定</span>有可用于支持求助的日志文件。<br>
+<br>日志位置由“高级设置 → 全局”中的“日志文件位置（Log File Location）”控制。默认位于操作系统的用户文档目录。例如 Windows 中，日志保存在“文档”目录下的“<span style="font-style: italic;">PHD2</span>”子目录。如果不方便，可通过该输入框指定其他文件夹。为避免积累过多文件，PHD2 自动删除超过 30 天的调试日志和超过 60 天的导星日志。若要长期保存，请移动或复制到 PHD2 不使用的其他文件夹。<br>
+<br>为简化下文的自动上传，日志按“摄影日”归组：从当地时间上午 09:00 开始的连续 24 小时。同一摄影日内多次运行 PHD2，导星和调试数据都写入该日对应的两个日志文件。<br>
+<br>少数情况下，为了调试和解决问题，还需要保存导星相机图像。可在“高级设置 → 全局”中启用“诊断图像日志（Enable diagnostic image logging）”。图像保存在与其他日志相同的位置，采用 FITS 格式以保留完整数据。如果只需保存单帧，可直接使用“文件 → 保存图像”。<br>
+<br>
+<span style="font-weight: bold;"><a name="Logging-Automatic_Upload"></a>自动上传日志<br>
+<br>
+</span>如果需要 PHD2 使用帮助或导星优化建议，可以在 Open<span style="font-weight: bold;">-</span>PHD-Guiding 论坛（https://groups.google.com/forum/#!forum/open-phd-guiding）发帖，并附上所讨论会话的日志。调试日志通常很大，不适合直接作为附件，应使用下面的上传工具。请不要编辑、截取或重命名日志。为方便上传，PHD2 内置了选择、压缩和自动上传相关日志的功能，位于“帮助”菜单。打开后会列出所有可用日志及其时间和持续时长：<br>
+<br>
+<img style="width: 557px; height: 467px;" alt="" src="Log_Upload_1.png"><br>
+<br>选中所需文件后点击“下一步（Next）”开始上传。务必检查“所属夜晚（Night Of）”列，确认覆盖了相关时间。每次运行 PHD2 都会创建日志，所以部分文件可能几乎为空，不要上传这些。只选择出现问题的会话所对应的文件。上传结束后，会出现另一个窗口，显示文件链接：<br>
+<br>
+<img style="width: 573px; height: 192px;" alt="" src="Log_Upload_2.png"><br>请复制或记录此链接，在论坛求助时一并提供。服务器会在合理期限后自动删除日志，无需手动清理。发帖时，请完整描述当时的操作、遇到的问题，以及希望重点查看的大致时间段。<br>
+<br>
+<h3><a name="Managing_Equipment_Profiles"></a>管理设备配置</h3>设备配置已在<a href="Basic_use.htm">基本使用</a>一节介绍，是“连接设备”对话框的一部分。要管理多个配置，使用其中的“管理配置（Manage Profiles）”按钮，可新建、编辑、重命名或删除配置。最重要、也最常用的选项是启动“新建配置向导”，详见基本使用章节。它会根据你的设备组合设置 PHD2。除暗场和坏像素图文件外，每个配置保存上次使用该配置时的全部设置。编辑已有配置时，先从配置下拉列表选择它，再在“<a name="Manage_Profiles"></a>管理配置”菜单中点击“设置（Settings）”，即可打开高级设置进行修改。请记住，在<span style="font-style: italic;">PHD2</span>会话中更改设置时，当前配置会自动更新。还可以导入和导出配置，用于调试、备份或在计算机之间迁移。<br><br><span style="font-weight: bold;">将 PHD2 设置迁移到另一台计算机</span><br><br>Windows 中，配置信息存放在注册表，不能仅复制普通文件来迁移设置。应先在旧计算机上导出配置文件，复制到新计算机，再执行导入。这样会迁移全部配置设置，但不包括暗场库和坏像素图。由于体积较大，这些数据独立存放在操作系统的 AppData\Local\PHD2 目录。若要迁移，必须手动复制整个目录及所有文件，并保持目录位置和文件名不变。不过，更好的做法是在新系统上重新建立暗场库和坏像素图，使其反映导星相机传感器当前的状态。<br>
+<br>
+<h3><a name="Ask_for_coordinates_aux_mount"></a>使用“询问坐标”的辅助赤道仪连接</h3>如果无法通过 ASCOM 或 INDI 连接赤道仪，还可以选择“询问坐标（Ask for coordinates）”辅助连接，作为一种折中办法。启用后，每次准备开始导星时都会要求输入或确认望远镜位置：<br>
+<br>
+<img style="width: 212px; height: 248px;" alt="" src="Manual_mount.png"><br>
+<br>输入当前赤纬以及向东或向西的指向后，PHD2 会自动调整标定以匹配天空位置。不必很精确，赤纬误差几度仍可使用。因此，只要每次转向不同目标时更新这些值，就无需重新标定。例如先在赤纬 0° 附近标定，再转到高赤纬目标时输入新坐标，通常比直接在天极附近标定更好。如果导星开始是由抖动操作或摄影程序的服务器指令触发，则不会弹出此对话框。要使标定补偿正确，之前的标定<span style="font-weight: bold;">必须</span>在提供了正确位置数据的情况下完成。<br>
+<br>在漂移对极轴工具中使用此选项时，对话框会略有不同：<br>
+<br>
+<img style="width: 327px; height: 350px;" alt="" src="Manual_mount_drift.png"><br>
+<br>补充赤经、纬度和经度后，漂移工具能更准确地绘制品红色目标圆。否则，调整阶段显示的圆只能表示指向误差的上限估计。<br>
+<br>连接或断开“询问坐标”辅助赤道仪，不会影响相机和主赤道仪连接。因此，可以在漂移对极轴或首次转向摄影目标时使用它，随后断开以避免反复出现对话框。无论采用何种方式，都由你负责提供正确值；严重错误的坐标可能导致导星不佳。<br>
+<br>
+<h3><a name="Advanced_Settings_for_the_Simulators"></a>模拟器的高级设置</h3>设备模拟器已在<a href="Basic_use.htm">基本使用</a>一节中介绍，是试用<span style="font-style: italic;">PHD2</span>并熟悉功能的实用工具。请记住，要进行有效模拟，需将相机选为“模拟器（Simulator）”，赤道仪选为“相机上（On-camera）”。进一步探索时，可通过主窗口“相机设置”按钮修改模拟参数：<br>
+<br>
+<img style="width: 659px; height: 543px;" alt="" src="Tools_simulator.png"><br>
+<br>
+<br>可以模拟赤纬回差、极轴误差引起的漂移，以及周期误差。也可以调整视宁度等级，产生相当逼真的星点扰动。逐个改变参数，能够观察它们如何影响星点偏移，以及不同算法如何响应。不过，除回差等显式设置外，模拟器中的赤道仪近乎完美，因此不能完全代表真实设备。模拟器对话框主要供开发使用，界面控件可能改变，而提示或文档未同步更新。<br>
+<h3><a name="Multiple_Executions"></a>运行多个程序实例</h3>某些情况下，你可能需要同时运行多个 PHD2 实例。启动第二个实例时添加命令行参数 -i 2，第三个使用 -i 3，以此类推。Windows 中可通过 cmd.exe 命令行启动，也可以按以下步骤创建桌面快捷方式：<br>
+<br>
+<div style="margin-left: 40px;">右键点击桌面。<br>选择“新建 → 快捷方式”。<br>输入程序位置："C:\Program Files (x86)\PHDGuiding2\PHD2.exe" -i2<br>点击“下一步”。<br>为快捷方式命名，例如 PHD2 #2。<br>点击“完成”。<br>
+</div>
+<br>请注意，第 3 步中程序路径两端的引号不能省略，因为 Windows 需要用它们包住包含空格的目录名。<br>
+<h3><a name="Keyboard_Shortcuts"></a>键盘快捷键</h3>PHD2 的许多常用工具和功能都有快捷键，完整列表见<a href="KeyboardShortcuts.htm">键盘快捷键</a>一节。<h3><a name="Software_Update"></a>软件更新</h3>
+<p>PHD2 论坛对求助最常见的回复之一是：请升级到最新版本，再检查问题是否仍然存在。如果旧版出现问题，很可能别人已遇到，而且新版本已经修复。因此，PHD2 开发者认为保持程序更新很重要。</p>
+<p>更新用于无人值守摄影的软件，有时会让人担心风险。PHD2 开发者理解这种顾虑，因为他们自己也从事天文摄影。保持稳定环境与获得最新修复和改进之间，需要权衡。有时相机厂家为了支持新型号，会对驱动和 SDK 作出不兼容更改。为支持新相机，PHD2 不得不更新 SDK，但这也意味着原先工作正常的相机和驱动可能遇到兼容性问题，只有同时升级到最新相机驱动及 PHD2 才能解决。</p>
+<p>PHD2 通过两条发布系列平衡这些需求。开发版包含最新修复和功能改进，发布前由开发者测试，通常直接在实际摄影中验证。选择开发版的用户可以较早获得新功能和修复。版本名如 2.6.3dev6，表示 2.6.3 正式版之后的第 6 个开发版。</p>
+<p>开发版经过更长时间测试后，会定期作为正式版发布。例如 2.6.3dev6 可能最终发布为正式版 2.6.4。</p>
+<h4>检查更新</h4>
+<p>PHD2 可自动检查软件更新，建议开启以保持版本较新。启用后，程序启动时会在后台检查；若有更新，会提供安装新版本的选项。自动检查不会干扰正常导星或自动化操作。在没有网络的野外摄影时，也可以放心保持开启；如果无法检查，它会等到下次启动再试。</p>
+<p>无论是否允许启动时自动检查，都可以随时从“帮助”菜单点击“检查更新（Check for updates）”，手动检查。</p>
+</body></html>

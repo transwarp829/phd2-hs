@@ -189,7 +189,7 @@ enum
     DEFAULT_MAX_STAR_COUNT = 9,
     DEFAULT_STABILITY_SIGMAX = 5,
     DEFAULT_MAX_CANDIDATES = 20, // number of stars AutoFind adds to the candidate list (the "reserve" pool)
-    MAX_LIST_SIZE = 24           // hard ceiling for the candidate list
+    MAX_LIST_SIZE = 24 // hard ceiling for the candidate list
 };
 
 // clang-format off

@@ -36,16 +36,61 @@
 #include "phd.h"
 
 #include <wx/dir.h>
+#include "debuglog_filename.h"
+#include <chrono>
+#include <cstdio>
+#include <limits>
+#ifdef __WINDOWS__
+# include <io.h>
+#endif
 
-#define ALWAYS_FLUSH_DEBUGLOG
 const int RetentionPeriod = 30;
+static const size_t DebugBufferSize = 64 * 1024;
 
-DebugLog::DebugLog() : m_enabled(false), m_lastWriteTime(wxDateTime::UNow()) { }
+static std::uint64_t LogClockMillis()
+{
+    return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+}
+
+struct DebugLogFiles
+{
+    DebugLog& log;
+    size_t Write(const char *data, size_t size) { return log.wxFFile::Write(data, size); }
+    bool Flush() { return log.wxFFile::Flush(); }
+    bool Rotate(std::uint64_t& size)
+    {
+        if (log.m_part == std::numeric_limits<unsigned int>::max())
+            return false;
+        const unsigned int part = log.m_part + 1;
+        const wxString path = wxString::FromUTF8(debuglog::MakePartName(log.m_path.ToUTF8().data(), part).c_str());
+        wxFFile next;
+        if (!next.Open(path, "ab"))
+            return false;
+        // Configure stdio before its first operation; otherwise its small default
+        // buffer can still turn a batch of records into many filesystem writes.
+        if (std::setvbuf(next.fp(), nullptr, _IOFBF, DebugBufferSize) != 0)
+            log.ReportIOError("configure file buffer");
+        const wxFileOffset length = next.Length();
+        if (length < 0)
+            return false;
+
+        // The old tail is already flushed. Open the replacement before detaching
+        // the old handle so an open failure leaves logging fully operational.
+        FILE *old = log.Detach();
+        log.Attach(next.Detach());
+        if (old && std::fclose(old) != 0)
+            log.ReportIOError("close rotated file");
+        log.m_part = part;
+        size = static_cast<std::uint64_t>(length);
+        return true;
+    }
+};
+
+DebugLog::DebugLog() : m_enabled(false), m_lastWriteTime(wxDateTime::UNow()), m_part(0), m_ioErrorReported(false) { }
 
 DebugLog::~DebugLog()
 {
-    wxFFile::Flush();
-    wxFFile::Close();
+    Close();
 }
 
 static bool ParseLogTimestamp(wxDateTime *p, const wxString& s)
@@ -71,7 +116,9 @@ wxDateTime DebugLog::GetLogFileTime()
     while (cont)
     {
         wxDateTime dt;
-        if (filename.length() == 35 && ParseLogTimestamp(&dt, filename.substr(14, 17)) &&
+        debuglog::FileName parsed;
+        if (debuglog::ParseFileName(filename.ToUTF8().data(), parsed) &&
+            ParseLogTimestamp(&dt, wxString::FromUTF8(parsed.timestamp.c_str())) &&
             (!latest.IsValid() || dt.IsLaterThan(latest)))
         {
             latest = dt;
@@ -88,40 +135,71 @@ wxDateTime DebugLog::GetLogFileTime()
 
 bool DebugLog::Enable(bool enable)
 {
-    bool prevState = m_enabled;
-
-    m_enabled = enable;
-
+    wxCriticalSectionLocker lock(m_criticalSection);
+    const bool prevState = m_enabled.load();
+    if (!enable)
+        FlushLocked();
+    m_enabled.store(enable && IsOpened());
     return prevState;
 }
 
 void DebugLog::InitDebugLog(bool enable, bool forceOpen)
 {
-    const wxDateTime& logFileTime = wxGetApp().GetLogFileTime();
-
     wxCriticalSectionLocker lock(m_criticalSection);
-
-    if (m_enabled)
+    if (!enable)
     {
-        wxFFile::Flush();
-        wxFFile::Close();
-
-        m_enabled = false;
+        if (forceOpen)
+        {
+            CloseLocked();
+            m_path.clear(); // next enable must use the newly selected directory
+        }
+        else
+            FlushLocked();
+        m_enabled.store(false);
+        return;
     }
-
-    if (enable && (m_path.IsEmpty() || forceOpen))
+    if (IsOpened() && !forceOpen)
     {
+        m_enabled.store(true);
+        return;
+    }
+    if (!CloseLocked())
+        ReportIOError("close before reopening");
+    if (m_path.IsEmpty() || forceOpen)
+    {
+        const wxDateTime& logFileTime = wxGetApp().GetLogFileTime();
         // Keep log files separated for multiple PHD2 instances
         wxString qualifier = wxGetApp().GetInstanceNumber() > 1 ? std::to_string(wxGetApp().GetInstanceNumber()) + "_" : "";
-        m_path = GetLogDir() + PATHSEPSTR + _("PHD2_DebugLog_") + qualifier + logFileTime.Format(_T("%Y-%m-%d_%H%M%S.txt"));
-
-        if (!wxFFile::Open(m_path, "a"))
-        {
-            wxMessageBox(wxString::Format(_("unable to open file %s"), m_path));
-        }
+        m_path = GetLogDir() + PATHSEPSTR + "PHD2_DebugLog_" + qualifier + logFileTime.Format("%Y-%m-%d_%H%M%S.txt");
     }
-
-    m_enabled = enable;
+    std::vector<std::string> names;
+    wxDir dir(wxFileName(m_path).GetPath());
+    wxString name;
+    if (dir.IsOpened())
+        for (bool more = dir.GetFirst(&name, "PHD2_DebugLog_*.txt", wxDIR_FILES); more; more = dir.GetNext(&name))
+            names.push_back(name.ToUTF8().data());
+    m_part = debuglog::LatestPart(wxFileName(m_path).GetFullName().ToUTF8().data(), names);
+    const wxString path = wxString::FromUTF8(debuglog::MakePartName(m_path.ToUTF8().data(), m_part).c_str());
+    if (!wxFFile::Open(path, "ab"))
+    {
+        m_enabled.store(false);
+        ReportIOError("open");
+        wxMessageBox(wxString::Format(_("unable to open file %s"), path));
+        return;
+    }
+    if (std::setvbuf(fp(), nullptr, _IOFBF, DebugBufferSize) != 0)
+        ReportIOError("configure file buffer");
+    const wxFileOffset size = Length();
+    if (size < 0)
+    {
+        ReportIOError("read file length");
+        wxFFile::Close();
+        m_enabled.store(false);
+        return;
+    }
+    m_buffer.Reset(static_cast<std::uint64_t>(size), LogClockMillis());
+    m_ioErrorReported = false;
+    m_enabled.store(true);
 }
 
 bool DebugLog::ChangeDirLog(const wxString& newdir)
@@ -133,7 +211,7 @@ bool DebugLog::ChangeDirLog(const wxString& newdir)
     {
         Debug.Write(wxString::Format("Error: unable to set new log dir %s\n", newdir));
         wxMessageBox(wxString::Format("invalid folder name %s, debug log folder unchanged", newdir));
-        ok = false;
+        return false;
     }
 
     Debug.Write(wxString::Format("Changed log dir to %s\n", newdir));
@@ -165,25 +243,91 @@ wxString DebugLog::AddBytes(const wxString& str, const unsigned char *pBytes, un
     return Write(Line + "\n");
 }
 
+void DebugLog::ReportIOError(const char *operation)
+{
+    if (m_ioErrorReported)
+        return;
+    m_ioErrorReported = true;
+    // Do not call wxLog here: an active wxLog target may feed back into Debug.
+    const wxString message = wxString::Format("PHD2 debug log: %s failed (%s, part %u)\n", operation, m_path, m_part);
+    const wxScopedCharBuffer bytes = message.ToUTF8();
+    std::fwrite(bytes.data(), 1, bytes.length(), stderr);
+    std::fflush(stderr);
+#ifdef __WINDOWS__
+    OutputDebugString(message.c_str());
+#endif
+}
+
+bool DebugLog::FlushLocked()
+{
+    if (!IsOpened())
+        return true;
+    DebugLogFiles files { *this };
+    const bool ok = m_buffer.Flush(files, LogClockMillis());
+    if (!ok)
+        ReportIOError("flush");
+    return ok;
+}
+
+bool DebugLog::CloseLocked()
+{
+    m_enabled.store(false);
+    if (!IsOpened())
+        return true;
+    const bool flushed = FlushLocked();
+    const bool closed = wxFFile::Close();
+    if (!closed)
+        ReportIOError("close");
+    m_buffer.Reset(0, LogClockMillis());
+    return flushed && closed;
+}
+
+bool DebugLog::Close()
+{
+    wxCriticalSectionLocker lock(m_criticalSection);
+    return CloseLocked();
+}
+
 bool DebugLog::Flush()
 {
-    bool ret = true;
+    wxCriticalSectionLocker lock(m_criticalSection);
+    return FlushLocked();
+}
 
-    if (m_enabled)
+bool DebugLog::FlushIfDue()
+{
+    wxCriticalSectionLocker lock(m_criticalSection);
+    if (!IsOpened())
+        return true;
+    DebugLogFiles files { *this };
+    const bool ok = m_buffer.FlushIfDue(files, LogClockMillis());
+    if (!ok)
+        ReportIOError("timed flush");
+    return ok;
+}
+
+bool DebugLog::FlushToDisk()
+{
+    wxCriticalSectionLocker lock(m_criticalSection);
+    if (!FlushLocked())
+        return false;
+#ifdef __WINDOWS__
+    if (IsOpened() && !FlushFileBuffers((HANDLE) _get_osfhandle(_fileno(fp()))))
     {
-        wxCriticalSectionLocker lock(m_criticalSection);
-
-        ret = wxFFile::Flush();
+        ReportIOError("flush to disk");
+        return false;
     }
-
-    return ret;
+#endif
+    return true;
 }
 
 wxString DebugLog::Write(const wxString& str)
 {
-    if (m_enabled)
+    if (m_enabled.load())
     {
         wxCriticalSectionLocker lock(m_criticalSection);
+        if (!m_enabled.load() || !IsOpened())
+            return str;
 
         wxDateTime now = wxDateTime::UNow();
         wxTimeSpan deltaTime = now - m_lastWriteTime;
@@ -191,10 +335,24 @@ wxString DebugLog::Write(const wxString& str)
         wxString outputLine = wxString::Format("%s %s %lu %s", now.Format("%H:%M:%S.%l"), deltaTime.Format("%S.%l"),
                                                (unsigned long) wxThread::GetCurrentId(), str);
 
-        wxFFile::Write(outputLine);
-#if defined(ALWAYS_FLUSH_DEBUGLOG)
-        wxFFile::Flush();
-#endif
+        const wxScopedCharBuffer bytes = outputLine.ToUTF8();
+        DebugLogFiles files { *this };
+        const debuglog::Buffer::Error error = m_buffer.Write(files, bytes.data(), bytes.length(), LogClockMillis());
+        if (error != debuglog::Buffer::Error::None)
+        {
+            const char *operation = error == debuglog::Buffer::Error::Rotate ? "rotate (continuing in current file)"
+                : error == debuglog::Buffer::Error::Write                    ? "write"
+                                                                             : "flush";
+            ReportIOError(operation);
+            if (error == debuglog::Buffer::Error::Write)
+            {
+                // Preserve a diagnostic copy when the log file cannot accept it.
+                std::fwrite(bytes.data(), 1, bytes.length(), stderr);
+                std::fflush(stderr);
+            }
+        }
+        else
+            m_ioErrorReported = false;
 #if defined(__WINDOWS__) && defined(_DEBUG)
         OutputDebugString(outputLine.c_str());
 #endif

@@ -6414,6 +6414,18 @@ msgstr "说明"
 msgid "Introduction"
 msgstr "说明"
 
+#: cam_zwo.cpp
+msgid "Failed to configure ZWO camera. See the debug log for details."
+msgstr "设置 ZWO 相机失败。详情请查看调试日志。"
+
+#: cam_zwo.cpp
+msgid "Failed to stop ZWO video capture. See the debug log for details."
+msgstr "停止 ZWO 视频采集失败。详情请查看调试日志。"
+
+#: cam_zwo.cpp
+msgid "Failed to start ZWO video capture. See the debug log for details."
+msgstr "启动 ZWO 视频采集失败。详情请查看调试日志。"
+
 #: myframe_events.cpp:243
 msgid "Spectrograph Slit Overlay"
 msgstr "叠加光谱仪狭长区块"

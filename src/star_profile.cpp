@@ -34,6 +34,7 @@
  */
 
 #include "phd.h"
+#include "star_profile_image.h"
 
 // clang-format off
 wxBEGIN_EVENT_TABLE(ProfileWindow, wxWindow)
@@ -303,19 +304,16 @@ void ProfileWindow::OnPaint(wxPaintEvent& WXUNUSED(evt))
         if (sz > 0 && width > 1)
         {
             wxString toggleMsg;
-            wxImageResizeQuality resizeQuality;
             if (!rawMode)
             {
-                resizeQuality = wxIMAGE_QUALITY_HIGH;
                 toggleMsg = _("Click image for raw view");
             }
             else
             {
-                resizeQuality = wxIMAGE_QUALITY_NEAREST;
                 toggleMsg = _("Click image for interpolated view");
             }
 
-            wxBitmap zoomedDBmp(crop->Rescale(width, width, resizeQuality));
+            wxBitmap zoomedDBmp(ScaleStarProfileCrop(*crop, width, rawMode));
             wxMemoryDC tmpMdc;
             tmpMdc.SelectObject(zoomedDBmp);
 

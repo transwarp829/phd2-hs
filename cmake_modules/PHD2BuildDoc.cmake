@@ -263,6 +263,11 @@ function(generate_single_doc_targets)
                            documentation_filelist)
 
     list(APPEND html_input_files ${documentation_filelist})
+    # Contents, translated indexes and screenshots also invalidate the archive.
+    file(GLOB help_assets CONFIGURE_DEPENDS
+         "${input_folder}/help/*.hhc" "${input_folder}/help/*.hhk.in"
+         "${input_folder}/help/*.png" "${input_folder}/help/*.PNG")
+    list(APPEND html_input_files ${help_assets})
 
     set(current_locale_output_folder ${CMAKE_BINARY_DIR}/${html_build_folder_names}/${locale}/)
     set(generated_hhk ${current_locale_output_folder}/PHD2GuideHelp.hhk)

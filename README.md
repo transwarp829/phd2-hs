@@ -17,10 +17,24 @@ The fork focuses on guide-camera performance and transport, without changing the
 - **Configuration robustness** with wx 3.2 (type-agnostic profile reads).
 - **Multi-star candidate pool**: `/guider/multistar/MaxCandidates` (default 20, range 9..24); up to 9 stars are still used per frame.
 - **Chinese (zh_CN / zh_TW) localization** updates.
+- **Runtime overhead**: debug logs use a 64 KiB buffer with a one-second flush
+  threshold and rotate at approximately 10 MiB between records. The statistics
+  pane refreshes its frame-rate row at most four times per second, outside the
+  guide-frame processing callback.
 
 Detailed change log: [CHANGELOG.md](CHANGELOG.md) (Chinese). Build instructions and user documentation are those of upstream PHD2; see [README-PHD2.txt.in](README-PHD2.txt.in), the `build/` scripts and <https://openphdguiding.org>. Vendor SDK binaries under `cameras/` are included as in the upstream tree.
 
 Status: experimental. Expect changes to be validated on real hardware; use at your own risk.
+
+### Regression tests and Chinese help
+
+Hardware-free capture and image-preview regression tests can be built separately
+from PHD2 and the vendor SDKs; see [tests/README.md](tests/README.md).
+
+Simplified Chinese in-app help is provided under [locale/zh_CN/help](locale/zh_CN/help),
+including the full manual and a [high-speed capture guide](locale/zh_CN/help/High_speed_capture.htm).
+The normal documentation build creates the `zh_CN` help archive automatically.
+Screenshots retain the original UI labels, with Chinese explanations in the text.
 
 ### Web site
 
